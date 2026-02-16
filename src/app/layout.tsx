@@ -1,4 +1,6 @@
+import { AuthProvider } from "@/context/auth.context";
 import "./globals.css";
+import { TooltipProvider } from "@/components/ui/tooltip";
 // import { LoadingProvider } from "@/app/store/LoadingContext";
 // import { ChatProvider } from "@/app/store/Chatinfo";
 import { Toaster } from "react-hot-toast";
@@ -21,7 +23,10 @@ export default function RootLayout({
 
         {/* <LoadingProvider> */}
           {/* <ChatProvider> */}
+          <AuthProvider>
+            <TooltipProvider>
             {children}
+            </TooltipProvider>
             <Toaster
               position="top-center"
               toastOptions={{
@@ -30,7 +35,8 @@ export default function RootLayout({
                   color: "#fff",
                 },
               }}
-            />
+              />
+           </AuthProvider>
           {/* </ChatProvider> */}
         {/* </LoadingProvider> */}
         

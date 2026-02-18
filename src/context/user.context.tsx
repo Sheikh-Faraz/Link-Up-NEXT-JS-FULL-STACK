@@ -4,7 +4,19 @@ import toast from "react-hot-toast";
 import { createContext, useContext, useState } from "react";
 
 // APIs
-import { addContactApi, getUsersApi, blockUserApi, unblockUserApi, deleteUserApi,  } from "@/services/user.service";
+import { 
+  
+  addContactApi, 
+  getUsersApi, 
+  blockUserApi, 
+  unblockUserApi, 
+  deleteUserApi, 
+  updateUserProfileApi, 
+  fetchUserInfoApi, 
+  restoreUserApi, 
+  getHiddenUsersApi,  
+
+} from "@/services/user.service";
 
 // Interface for User type (you can expand this in user.types.ts)
 import type { User } from "@/types/user.types";
@@ -12,13 +24,19 @@ import type { User } from "@/types/user.types";
 // Utility to extract error messages
 import { getErrorMessage } from "@/lib/error";
 
+// authUser from Auth Context
+import { useAuth } from "./auth.context";
+
 
 interface userContextType {
 
+    selectedUser: User | null;
     setSelectedUser: (user: User | null) => void;
     users: User[];
     isUsersLoading: boolean;
     
+    fetchUser: () => Promise<void>;                      // DONE
+    updateUserProfile: (data: unknown) => Promise<void>; // DONE
     selectUser: (user: User | null) => void;             // DONE
     getUsers: () => Promise<void>;                       // DONE
     addContact: (UserId: string) => Promise<void>;       // DONE
@@ -35,6 +53,9 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [isUsersLoading, setIsUsersLoading] = useState(false);
+
+  // Importing and authUser from Auth Context to use in function
+  const { authUser, setAuthUser } = useAuth();
 
 
 //   For Selecting User
@@ -194,13 +215,46 @@ const restoreUser = async (userId: string) => {
   }
 };
 
+// Fetch user details
+const fetchUser = async () => {
+  
+      try {
+        const res = await fetchUserInfoApi(); 
+
+        setAuthUser(res.data);
+
+      } catch (err) {
+        toast.error(getErrorMessage(err, "Failed to fetch user info"));
+        
+      }
+    };
+
+// Update User Details
+  const updateUserProfile = async (data: unknown) => {
+    try {
+      const res = await updateUserProfileApi(data);
+
+      setAuthUser(res.data);
+
+      toast.success("Profile updated successfully");
+
+    }
+    catch (err) {
+        toast.error(getErrorMessage(err, "Failed to update profile"));
+
+    }
+  };
+
 
   return (
     <userContext.Provider value={{ 
         users,
         setSelectedUser,
         isUsersLoading,
+        selectedUser,
 
+        fetchUser,
+        updateUserProfile,
         selectUser,
         getUsers,
         blockUser,

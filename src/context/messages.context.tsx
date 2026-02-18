@@ -4,7 +4,7 @@ import toast from "react-hot-toast";
 import { createContext, useContext, useState } from "react";
 
 // APIs
-import { getMessagesApi, } from "@/services/message.service";
+import { clearChatApi, deleteMessageApi, editMessageApi, forwardMessageApi, getMessagesApi, markAsSeenApi, reactToMessageApi, sendMessageApi, } from "@/services/message.service";
 
 // Interface for User type (you can expand this in user.types.ts)
 import type { Message } from "@/types/message.type";
@@ -12,6 +12,9 @@ import type { ReplyToMessage } from "@/types/message.type";
 
 // Utility to extract error messages
 import { getErrorMessage } from "@/lib/error";
+
+// authUser from Auth Context
+import { useAuth } from "./auth.context";
 
 
 interface messageContextType {
@@ -24,8 +27,10 @@ interface messageContextType {
     forwardMessage: (messageId: string, receiverId: string) => Promise<void>;
     deleteMessage: (messageId: string, receiverId: string, forEveryone?: boolean) => Promise<void>;
     reactToMessage: (messageId: string, emoji: string) => Promise<void>;
+    markAsSeen: (receiverId: string) => Promise<void>;
+    clearChat: (userId: string) => Promise<void>;
 
-    cancelReply: () => void;
+    // cancelReply: () => void;
 
 }
     
@@ -35,6 +40,9 @@ export const MessageProvider = ({ children }: { children: React.ReactNode }) => 
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [isMessagesLoading, setIsMessagesLoading] = useState(false);
+
+  // Importing and authUser from Auth Context to use in markAsSeen function
+  const { authUser } = useAuth();
 
 
 //  For Getting Messages
@@ -139,6 +147,20 @@ const deleteMessage = async (messageId: string, receiverId: string, deleteForEve
     }
   };
 
+// For Clearing Chat
+const clearChat = async (userId: string) => {  
+ 
+  try {
+    const res = await clearChatApi(userId);
+
+    setMessages([]);
+    toast.success("Chat cleared successfully");
+
+  } catch (err) {
+           toast.error(getErrorMessage(err, "Failed to clear chat"));
+  }
+
+};
 
 // For Forwarding Messages
 const forwardMessage = async (messageId: string, receiverId: string) => {
@@ -201,6 +223,7 @@ const forwardMessage = async (messageId: string, receiverId: string) => {
   };
 
 
+
   return (
     <messageContext.Provider value={{ 
         messages,
@@ -212,7 +235,10 @@ const forwardMessage = async (messageId: string, receiverId: string) => {
         forwardMessage,
         deleteMessage,
         reactToMessage,
-        cancelReply
+        markAsSeen,
+        clearChat,
+
+        // cancelReply
     }}>
       {children}
     </messageContext.Provider>

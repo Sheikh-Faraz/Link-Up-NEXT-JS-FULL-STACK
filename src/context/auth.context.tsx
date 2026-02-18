@@ -6,7 +6,7 @@ import Cookies from "js-cookie";
 import toast from "react-hot-toast";
 
 // APIs
-import { checkAuthApi, fetchUserInfoApi, googleLoginApi, loginApi, logoutApi, signupApi, updateUserProfileApi } from "@/services/auth.services";
+import { checkAuthApi, googleLoginApi, loginApi, logoutApi, signupApi } from "@/services/auth.services";
 
 // Utility to extract error messages
 import { getErrorMessage } from "@/lib/error";
@@ -21,11 +21,11 @@ import { googleLogout } from "@react-oauth/google";
 
 interface AuthContextType {
   authUser: User | null;
+
+  setAuthUser: (user: User | null) => void;
+
   isLoggingIn: boolean;
   isSigningUp: boolean;
-
-  fetchUser: () => Promise<void>;
-  updateUserProfile: (data: unknown) => Promise<void>;
 
   checkAuth: () => Promise<void>;
   signup: (formData: unknown) => Promise<void>;
@@ -39,7 +39,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
 
-  const [authUser, setAuthUser] = useState(null);
+  const [authUser, setAuthUser] = useState<User | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [ isSigningUp, setIsSigningUp] = useState(false);
 
@@ -149,35 +149,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-// Fetch user details
-const fetchUser = async () => {
-  
-      try {
-        const res = await fetchUserInfoApi(); 
-
-        setAuthUser(res.data);
-
-      } catch (err) {
-        toast.error(getErrorMessage(err, "Failed to fetch user info"));
-        
-      }
-    };
-
-// Update User Details
-  const updateUserProfile = async (data: unknown) => {
-    try {
-      const res = await updateUserProfileApi(data);
-
-      setAuthUser(res.data);
-
-      toast.success("Profile updated successfully");
-
-    }
-    catch (err) {
-        toast.error(getErrorMessage(err, "Failed to update profile"));
-
-    }
-  };
 
 // For Checking Auth
   const checkAuth = async () => {
@@ -196,12 +167,11 @@ const fetchUser = async () => {
   return (
     <AuthContext.Provider value=
     {{ 
-        authUser, 
+        authUser,
+        setAuthUser, 
+
         isLoggingIn, 
         isSigningUp,
-        
-        fetchUser,
-        updateUserProfile,
 
         checkAuth,
         signup,

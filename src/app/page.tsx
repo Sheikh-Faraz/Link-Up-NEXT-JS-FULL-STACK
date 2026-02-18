@@ -6,16 +6,19 @@ import NoChatSelected from "@/app/blocks/NoChatSelected";
 import { useEffect } from "react";
 
 // Contexts
-import { useChat } from "@/app/store/Chatinfo";
-import { useGlobalLoading } from "@/app/store/LoadingContext";
+// import { useChat } from "@/app/store/Chatinfo";
+import { useGlobalLoading } from "@/context/loading.context";
+
 import { useUser } from "@/context/user.context";
 import { useAuth } from "@/context/auth.context";
+import { useUI } from "@/context/ui.context";
 
 export default function Home() {
+
   // Contexts
-  const { selectedUser, authUser, checkAuth, previewSidebar, isChatOpen, chatOpen } = useChat();
-  const { selectUser } = useUser();
-  const { authUser } = useAuth();
+  const { previewSidebar, isChatOpen, chatOpen } = useUI();
+  const { selectUser, selectedUser } = useUser();
+  const { authUser, checkAuth } = useAuth();
 
 
   const { setIsLoading } = useGlobalLoading();

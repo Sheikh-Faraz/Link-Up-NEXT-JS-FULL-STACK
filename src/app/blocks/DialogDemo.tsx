@@ -15,10 +15,15 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { CirclePlus } from "lucide-react"
 import { useState, FormEvent } from "react";
-// import { useChat } from "@/app/store/Chatinfo";
+
+// Context
+import { useUser } from "@/context/user.context";
 
 export function DialogDemo() {
-//   const { addContact } = useChat();
+
+  // Context
+  const { addContact } = useUser();
+
   const [userIdInput, setUserIdInput] = useState("");
 
 const handleAddContact = async (e: FormEvent<HTMLFormElement>) => {
@@ -26,7 +31,9 @@ const handleAddContact = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (!userIdInput.trim()) return alert("Please enter a UserId");
-    // addContact(userIdInput.trim());
+    
+    // Sending to backend/api
+    addContact(userIdInput.trim());
 
   };
   return (

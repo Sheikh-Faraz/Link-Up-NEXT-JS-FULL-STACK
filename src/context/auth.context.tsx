@@ -6,7 +6,7 @@ import Cookies from "js-cookie";
 import toast from "react-hot-toast";
 
 // APIs
-import { checkAuthApi, googleLoginApi, loginApi, logoutApi, signupApi } from "@/services/auth.services";
+import { checkAuthApi, googleLoginApi, loginApi, signupApi } from "@/services/auth.services";
 
 // Utility to extract error messages
 import { getErrorMessage } from "@/lib/error";
@@ -131,15 +131,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const logout = async () => {
     try {
 
-      await logoutApi();
-      toast.success("Logged out successfully");
-
       // 🧹 Remove token from everywhere
       localStorage.removeItem("token");
       Cookies.remove("token");
       
       googleLogout();
 
+      setAuthUser(null);
+      
+      toast.success("Logged out successfully");
+      
       // 👇 Redirect after Logout
       router.push("/login");
 

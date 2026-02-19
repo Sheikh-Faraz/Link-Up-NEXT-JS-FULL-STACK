@@ -36,13 +36,17 @@ interface userContextType {
     isUsersLoading: boolean;
     
     fetchUser: () => Promise<void>;                      // DONE
-    updateUserProfile: (data: unknown) => Promise<void>; // DONE
+
+    updateUserProfile: (formData: FormData) => Promise<void>;
+    // updateUserProfile: (data: unknown) => Promise<void>; // DONE
     selectUser: (user: User | null) => void;             // DONE
     getUsers: () => Promise<void>;                       // DONE
     addContact: (UserId: string) => Promise<void>;       // DONE
     blockUser: (userId: string) => Promise<void>;        // DONE
     unblockUser: (userId: string) => Promise<void>;      // DONE
     deleteUser: (userId: string) => Promise<void>;       // DONE
+    getHiddenOrBlockedUsers: () => Promise<void>;        // DONE
+    restoreUser: (userId: string) => Promise<void>;      // DONE
 
 }
 
@@ -230,9 +234,9 @@ const fetchUser = async () => {
     };
 
 // Update User Details
-  const updateUserProfile = async (data: unknown) => {
+  const updateUserProfile = async (formData: FormData) => {
     try {
-      const res = await updateUserProfileApi(data);
+      const res = await updateUserProfileApi(formData);
 
       setAuthUser(res.data);
 
@@ -260,7 +264,9 @@ const fetchUser = async () => {
         blockUser,
         unblockUser,
         addContact,
-        deleteUser
+        deleteUser,
+        getHiddenOrBlockedUsers,
+        restoreUser,
     }}>
       {children}
     </userContext.Provider>

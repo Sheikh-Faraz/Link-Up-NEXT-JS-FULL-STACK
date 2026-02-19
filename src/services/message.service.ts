@@ -1,8 +1,16 @@
 import axiosInstance from "@/lib/axios";
 import { ReplyToMessage } from "@/types/message.type";
 
-export const getMessagesApi = (userId: string) => {
-    return axiosInstance.get(`/messages/${userId}`);
+// --------------------------------------
+// DONE (1). REMAINING (7), TOTAL (8)
+// --------------------------------------
+
+
+// ✅ Done / Somewhat not complete 
+export const getMessagesApi = (receiverId: string) => {
+    const res = axiosInstance.get(`/messages/${receiverId}`);
+    console.log(res);
+    return res;
 };
 
 export const sendMessageApi = (formData: FormData) => {

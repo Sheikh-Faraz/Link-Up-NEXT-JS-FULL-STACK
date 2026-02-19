@@ -6,7 +6,6 @@ import NoChatSelected from "@/app/blocks/NoChatSelected";
 import { useEffect } from "react";
 
 // Contexts
-// import { useChat } from "@/app/store/Chatinfo";
 import { useGlobalLoading } from "@/context/loading.context";
 
 import { useUser } from "@/context/user.context";
@@ -17,7 +16,7 @@ export default function Home() {
 
   // Contexts
   const { previewSidebar, isChatOpen, chatOpen } = useUI();
-  const { selectUser, selectedUser } = useUser();
+  const { selectedUser } = useUser();
   const { authUser, checkAuth } = useAuth();
 
 
@@ -27,9 +26,13 @@ export default function Home() {
     setIsLoading(false);
   }, [setIsLoading]);
 
+  // useEffect(() => {
+  //   checkAuth();
+  // }, [authUser, checkAuth]);
+
   useEffect(() => {
     checkAuth();
-  }, [authUser, checkAuth]);
+  }, []);
 
   // Open chat when user is selected
   useEffect(() => {
@@ -40,7 +43,7 @@ export default function Home() {
   }, [selectedUser]);
 
   return (
-    <div className="flex bg-sidebar w-full">
+    <div className="flex bg-linear-to-r from-gray-100 to-gray-100 w-full">
       <SidebarProvider>
         {/* Sidebar */}
     

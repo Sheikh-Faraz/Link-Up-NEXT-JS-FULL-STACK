@@ -46,11 +46,13 @@ export const MessageProvider = ({ children }: { children: React.ReactNode }) => 
 
 
 //  For Getting Messages
-    const getMessages = async (userId: string) => {
+    const getMessages = async (receiverId: string) => {
         
     try {
         setIsMessagesLoading(true);
-        const res = await getMessagesApi(userId);
+        const res = await getMessagesApi(receiverId);
+
+        console.log("This is response: ", res);
     
         setMessages(res.data);  
 

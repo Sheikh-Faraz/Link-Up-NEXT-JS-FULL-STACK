@@ -1,39 +1,40 @@
 import axiosInstance from "@/lib/axios";
-import { ReplyToMessage } from "@/types/message.type";
 
 // --------------------------------------
-// DONE (1). REMAINING (7), TOTAL (8)
+// DONE (2). TESTED (2/8) REMAINING (6), TOTAL (8)
 // --------------------------------------
 
 
-// ✅ Done / Somewhat not complete 
+// 1. ✅ Done / Tested
 export const getMessagesApi = (receiverId: string) => {
-    const res = axiosInstance.get(`/messages/${receiverId}`);
+    const res = axiosInstance.get(`/messages/get-messages/${receiverId}`);
     console.log(res);
     return res;
 };
 
+
+// 2. ✅ Done / Tested
 export const sendMessageApi = (formData: FormData) => {
-
-    // if (replyTo) formData.append("replyTo", JSON.stringify(replyTo));
-    // if (file) formData.append("file", file);
-
-    // Stating a dummy api for now
-    return axiosInstance.put("/messages/sendMessage", formData);
-    // return axiosInstance.post("/messages/send", formData, {
-    //     headers: {
-    //         "Content-Type": "multipart/form-data",
-    //     },
-    // });
+    const res = axiosInstance.post("/messages/send-message", formData);
+    return  res;
 };
 
+
+// 3. ✅ Done / 
 export const editMessageApi = (messageId: string, newText: string, receiverId: string) => {
-    return axiosInstance.put("/messages/edit", { messageId, newText, receiverId });
+    return axiosInstance.patch(`/messages/edit-message/${messageId}`, { content: newText, receiverId });
 };
+
 
 export const deleteMessageApi = (messageId: string, receiverId: string, deleteForEveryone: boolean) => {
     return axiosInstance.delete("/messages/delete", { data: { messageId, receiverId, deleteForEveryone } });
 };
+
+
+export const clearChatApi = (userId: string) => {
+    return axiosInstance.delete("/messages/clear-chat", { data: { userId } });
+};
+
 
 export const forwardMessageApi = (receiverId: string, messageId: string) => {
 
@@ -51,14 +52,13 @@ export const forwardMessageApi = (receiverId: string, messageId: string) => {
     });
 };
 
+
 export const reactToMessageApi = (messageId: string, reaction: string) => {
     return axiosInstance.post("/messages/react", { messageId, reaction });
 };
+
 
 export const markAsSeenApi = (messageIds: string) => {
     return axiosInstance.post("/messages/mark-as-seen", { messageIds });
 };
 
-export const clearChatApi = (userId: string) => {
-    return axiosInstance.delete("/messages/clear-chat", { data: { userId } });
-};

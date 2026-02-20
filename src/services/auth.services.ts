@@ -2,28 +2,29 @@ import axiosInstance from "@/lib/axios";
 
 
 // --------------------------------------
-// DONE (3). REMAINING (1), TOTAL (4)
+// DONE (3). TESTED (2/4), REMAINING (1), TOTAL (4)
 // --------------------------------------
 
 
-// ✅ Done / Tested 
+// 1. ✅ Done / Tested 
 export const checkAuthApi = async () => {
   const res = await axiosInstance.get("/auth/check-auth");
   return res;
 };
 
-// ✅ Done / Tested 
+// 2. ✅ Done / Tested 
 export const loginApi = async (data: unknown) => {
   const res = await axiosInstance.post("/auth/login", data);
   return res;
 };
 
-// ✅ Done/ --
+// 3. ✅ Done/ --
 export const signupApi = async (data: unknown) => {
   const res = await axiosInstance.post("/auth/signup", data);
   return res;
 };
 
+// 4. 
 export const googleLoginApi = async (token: string) => {
   const res = await axiosInstance.post("/auth/google-login", { token });
   return res;

@@ -2,25 +2,27 @@ import { NextRequest, NextResponse } from "next/server";
 import User from "@/models/User";
 import { getCurrentUser } from "@/lib/getCurrentUser";
 
-export async function PATCH( req: NextRequest, params : Promise<{ id: string }> ) {
+
+export async function PATCH( req: NextRequest, {params} : {params: Promise<{ id: string }>} ) {
   try {
 
     const currentUser = await getCurrentUser(req);
 
-    // const { id: targetUserId } = await params;
+    // This id here is the targeted/selected user to block
     const { id } = await params;
-    const targetUserId  = id;
 
     // 🔹 Prevent self block
-    if (currentUser._id.toString() === targetUserId) {
+    if (currentUser._id.toString() === id) {
       return NextResponse.json(
         { message: "You cannot block yourself" },
         { status: 400 }
       );
     }
 
-    const targetUser = await User.findById(targetUserId);
+    const targetUser = await User.findById(id);
     if (!targetUser) {
+      console.log("Error is coming here");
+
       return NextResponse.json(
         { message: "User not found" },
         { status: 404 }
@@ -28,7 +30,7 @@ export async function PATCH( req: NextRequest, params : Promise<{ id: string }> 
     }
 
     // 🔹 Check if already blocked
-    if (currentUser.blockedUsers.includes(targetUserId)) {
+    if (currentUser.blockedUsers.includes(id)) {
       return NextResponse.json(
         { message: "User already blocked" },
         { status: 400 }
@@ -36,7 +38,7 @@ export async function PATCH( req: NextRequest, params : Promise<{ id: string }> 
     }
 
     // 🔹 Add to blocked list
-    currentUser.blockedUsers.push(targetUserId);
+    currentUser.blockedUsers.push(id);
     await currentUser.save();
 
     return NextResponse.json({

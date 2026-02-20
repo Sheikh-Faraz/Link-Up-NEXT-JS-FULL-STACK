@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Message from "@/models/Message";
 import { getCurrentUser } from "@/lib/getCurrentUser";
 
-export async function GET( req: NextRequest, params : Promise<{ receiverId: string }>) {
+export async function GET( req: NextRequest, { params } : { params: Promise<{ receiverId: string }> }) {
   try {
 
     const senderId = await getCurrentUser(req);

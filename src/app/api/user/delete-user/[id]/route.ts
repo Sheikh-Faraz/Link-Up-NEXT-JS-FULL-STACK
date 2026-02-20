@@ -1,18 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/getCurrentUser";
 
-export async function DELETE(req: NextRequest, params : Promise<{id: string}>) {
+export async function DELETE(req: NextRequest, { params } : { params: Promise<{id: string}> }) {
   try {
 
     // 🔹 Logged-in user (from JWT)
     const currentUser = await getCurrentUser(req);
 
-    // const { id: targetUserId } = await params; // user to delete (ObjectId)
+    // This is the id of the targetedUser/ user to delete
     const { id } = await params; // user to delete (ObjectId)
-    const targetUserId  = id; // user to delete (ObjectId)
 
     if (!currentUser) {
-      console.log("This is the current user message failed 404 console");
 
       return NextResponse.json(
         { message: "User not found" },
@@ -21,8 +19,8 @@ export async function DELETE(req: NextRequest, params : Promise<{id: string}>) {
     }
 
     // 🔹 Avoid duplicate entries
-    if (!currentUser.isDeletedFor.includes(targetUserId)) {
-      currentUser.isDeletedFor.push(targetUserId);
+    if (!currentUser.isDeletedFor.includes(id)) {
+      currentUser.isDeletedFor.push(id);
       await currentUser.save();
     }
 

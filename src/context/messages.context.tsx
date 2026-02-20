@@ -4,11 +4,21 @@ import toast from "react-hot-toast";
 import { createContext, useContext, useState } from "react";
 
 // APIs
-import { clearChatApi, deleteMessageApi, editMessageApi, forwardMessageApi, getMessagesApi, markAsSeenApi, reactToMessageApi, sendMessageApi, } from "@/services/message.service";
+import { 
+
+  clearChatApi, 
+  deleteMessageApi, 
+  editMessageApi, 
+  forwardMessageApi, 
+  getMessagesApi, 
+  markAsSeenApi, 
+  reactToMessageApi, 
+  sendMessageApi 
+
+} from "@/services/message.service";
 
 // Interface for User type (you can expand this in user.types.ts)
-import type { Message } from "@/types/message.type";
-import type { ReplyToMessage } from "@/types/message.type";
+import type { ReplyToMessage, Message } from "@/types/message.type";
 
 // Utility to extract error messages
 import { getErrorMessage } from "@/lib/error";
@@ -65,38 +75,36 @@ export const MessageProvider = ({ children }: { children: React.ReactNode }) => 
   };
 
 // For Sending Messages
-  const sendMessage = async (receiverId: string , text: string, replyTo?: ReplyToMessage, file?: File, fileName?: string,) => {
+const sendMessage = async ( receiverId: string, text: string, replyTo?: ReplyToMessage, file?: File, fileName?: string) => {
+  
+  if (!text.trim() && !file) return;
 
-    // prevent empty message with no file
-    if (!text.trim() && !file) return;      
+  try {
+    const formData = new FormData();
 
-    try{
+    formData.append("receiverId", receiverId);
+    formData.append("text", text);
+    formData.append("fileName", fileName || "");
 
-      // ===========================================
-      const formData = new FormData();
-      formData.append("receiverId", receiverId);
-      formData.append("text", text);
-      formData.append("fileName", fileName || "");
+    if (replyTo) {
+      formData.append("replyTo", JSON.stringify(replyTo));
+    }
 
-      // ✅ Fix: Convert object to string before appending
-      if (replyTo) formData.append("replyTo", JSON.stringify(replyTo));
+    if (file) {
+      formData.append("file", file);
+    }
 
-      if (file) formData.append("file", file);
-      // ===========================================
+    // read the sent message from the Axios response data and add it to the messages state
+    const { data } = await sendMessageApi(formData);
+    const newMessage = data.sendedMessage; // Adjust this based on your actual response structure
 
-    const res = await sendMessageApi(formData);
-
-    // 3️⃣ Update local state immediately (optimistic UI)
-    const newMessage = res.data.sendedMessage; // your backend should return the message
-
-    // // ✅ Append the new message to the existing messages
     setMessages((prev) => [...prev, newMessage]);
-      
-    } catch (err) {
+
+  } catch (err) {
         toast.error(getErrorMessage(err, "Failed to send message"));
 
-    }
-  };
+  }
+};
 
 
 // For Editing Messages
@@ -111,10 +119,12 @@ const editMessage = async (messageId: string, newText: string, receiverId: strin
       setMessages((prev) =>
         prev.map((m) => (m._id === updatedMessage._id ? updatedMessage : m))
       );
+
       toast.success("Message edited");
 
     } catch (err) {
         toast.error(getErrorMessage(err, "Failed to edit message"));
+        
     }
   };
 

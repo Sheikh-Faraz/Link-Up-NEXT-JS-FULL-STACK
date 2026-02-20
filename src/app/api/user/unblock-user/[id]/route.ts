@@ -3,10 +3,7 @@ import { getCurrentUser } from "@/lib/getCurrentUser";
 import { User } from "@/types/user.types";  
 
 
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH( req: NextRequest, { params }: { params: Promise<{ id: string }> } ) {
   try {
     
     const currentUser = await getCurrentUser(req);

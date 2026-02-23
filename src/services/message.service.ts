@@ -1,7 +1,7 @@
 import axiosInstance from "@/lib/axios";
 
 // --------------------------------------
-// DONE (2). TESTED (2/8) REMAINING (6), TOTAL (8)
+// DONE (4). TESTED (4/8) REMAINING (4), TOTAL (8)
 // --------------------------------------
 
 
@@ -20,19 +20,22 @@ export const sendMessageApi = (formData: FormData) => {
 };
 
 
-// 3. ✅ Done / 
+// 3. ✅ Done /  Tested
 export const editMessageApi = (messageId: string, newText: string, receiverId: string) => {
     return axiosInstance.patch(`/messages/edit-message/${messageId}`, { content: newText, receiverId });
 };
 
 
+// 4. ✅ Done /  Tested
 export const deleteMessageApi = (messageId: string, receiverId: string, deleteForEveryone: boolean) => {
-    return axiosInstance.delete("/messages/delete", { data: { messageId, receiverId, deleteForEveryone } });
+    return axiosInstance.delete(`/messages/delete-message/${messageId}`, { data: { receiverId, deleteForEveryone } });
 };
 
 
+// 4. ✅ Done /  Tested
 export const clearChatApi = (userId: string) => {
-    return axiosInstance.delete("/messages/clear-chat", { data: { userId } });
+    return axiosInstance.delete(`/messages/clear-chat/${userId}`);
+    return res;
 };
 
 

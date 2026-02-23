@@ -23,12 +23,12 @@ export async function PATCH( req: NextRequest, { params }: { params: Promise<{ i
     }
 
     // Optional security check
-    if (message.sender.toString() !== userId) {
-      return NextResponse.json(
-        { message: "Not allowed" },
-        { status: 403 }
-      );
-    }
+    // if (message.sender.toString() !== userId) {
+    //   return NextResponse.json(
+    //     { message: "Not allowed" },
+    //     { status: 403 }
+    //   );
+    // }
 
     const updatedMessage = await Message.findByIdAndUpdate(
       id,

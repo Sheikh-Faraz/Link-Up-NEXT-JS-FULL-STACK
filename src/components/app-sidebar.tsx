@@ -9,7 +9,6 @@ import avatar from "@/app/images/avatarpic.png";
 // Contexts
 import { useAuth } from "@/context/auth.context";
 import { useUser } from "@/context/user.context";
-// import { useMessage } from "@/context/message.context";
 
 import {
   Sidebar,

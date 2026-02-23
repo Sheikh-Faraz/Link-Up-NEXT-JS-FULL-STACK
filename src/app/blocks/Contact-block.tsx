@@ -1,6 +1,5 @@
 import Image from "next/image";
 import avatar from '@/app/images/avatarpic.png'
-// import { useChat } from "@/app/store/Chatinfo";
 
 interface ContactProps {
   name: string;
@@ -16,7 +15,6 @@ export default function ContactBlock({
   onClick,
 }: ContactProps) {
 
-//   const { onlineUsers } = useChat();  
 
   const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
 

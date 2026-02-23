@@ -166,7 +166,8 @@ const clearChat = async (userId: string) => {
     const res = await clearChatApi(userId);
 
     setMessages([]);
-    toast.success("Chat cleared successfully");
+
+    toast.success(res.data.message || "Chat cleared successfully");
 
   } catch (err) {
            toast.error(getErrorMessage(err, "Failed to clear chat"));

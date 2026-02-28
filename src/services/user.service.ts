@@ -1,7 +1,7 @@
 import axiosInstance from "@/lib/axios";
 
 // --------------------------------------
-// DONE (9). TESTED (5/9), REMAINING (0), TOTAL (9)
+// DONE (9). TESTED (8/9), REMAINING (0), TOTAL (9)
 // --------------------------------------
 
 
@@ -40,7 +40,7 @@ export const deleteUserApi = async (userId: string) => {
 };
 
 
-// 6. ✅ Done /  
+// 6. ✅ Done / Tested
 export const getHiddenUsersApi = async () => {
   const res = await axiosInstance.get("/user/hidden-users");
   return res;
@@ -54,18 +54,17 @@ export const restoreUserApi = async (userId: string) => {
 };
 
 
-// 8. ✅ Done /  
+// 8. ✅ Done / Tested
+// Your own data i.e the looged in user info
 export const fetchUserInfoApi = async () => {
   const res = await axiosInstance.get("/user/get-user-info");
   return res;
 };
 
 
-// 9. ✅ Done /  
+// 9. ✅ Done / Tested
 export const updateUserProfileApi = async (formData: FormData) => {
-  const res = await axiosInstance.put(
-    "/auth/update-profile",
-    formData,
+  const res = await axiosInstance.put("/user/update-profile", formData,
     {
       headers: { "Content-Type": "multipart/form-data" },
     }

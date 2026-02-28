@@ -4,6 +4,7 @@ import { Toaster } from "react-hot-toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 // import { GoogleOAuthProvider } from "@react-oauth/google";
+import  SidebarLocked  from "@/app/blocks/Sidebar-locked";
 
 // Contexts
 import { LoadingProvider } from "@/context/loading.context";
@@ -25,9 +26,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>
+      <body className="flex flex-col lg:flex-row max-lg:overflow-hidden">
       {/* <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!}> */}
-
+        
         {/* Loading Context */}
         <LoadingProvider>  
 
@@ -43,9 +44,16 @@ export default function RootLayout({
                 {/* Messages Context */}
                 <MessageProvider>
 
+                          {/* Navigaiton sidebar */}
+                        <div className="hidden lg:block">
+                          <SidebarLocked />
+                         </div>
+
                     {/* Childer, Tooltip & Toaster */}
                     <TooltipProvider>
-                    {children}
+                      <main className="flex-1">  
+                        {children}
+                      </main>
                     </TooltipProvider>
                     <Toaster
                       position="top-center"

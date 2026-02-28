@@ -32,10 +32,9 @@ export const deleteMessageApi = (messageId: string, receiverId: string, deleteFo
 };
 
 
-// 4. ✅ Done /  Tested
+// 5. ✅ Done /  Tested
 export const clearChatApi = (userId: string) => {
     return axiosInstance.delete(`/messages/clear-chat/${userId}`);
-    return res;
 };
 
 

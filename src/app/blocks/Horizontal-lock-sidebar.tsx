@@ -16,24 +16,34 @@ import Image from "next/image";
 export default function HorizontalSidebarLocked() {
   const pathname = usePathname(); // gives current route like "/Home", "/Profile", etc.
 
-  const [active, setActive] = useState(1);
+  // const [active, setActive] = useState(1);
 
 // Contexts
   const { logout } = useAuth();
   const { selectUser } = useUser();
   const { setIsLoading } = useGlobalLoading();
 
-  useEffect(() => {
-    if (pathname === "/Home") {
-      setActive(2);
-    } else if (pathname === "/Profile") {
-      setActive(3);
-    } else if (pathname === "/Restore-Contacts") {
-      setActive(4);
-    } else {
-      setActive(2); // or any default
-    }
-  }, [pathname, setActive]);
+  // useEffect(() => {
+  //   if (pathname === "/Home") {
+  //     setActive(2);
+  //   } else if (pathname === "/Profile") {
+  //     setActive(3);
+  //   } else if (pathname === "/Restore-Contacts") {
+  //     setActive(4);
+  //   } else {
+  //     setActive(2); // or any default
+  //   }
+  // }, [pathname, setActive]);
+
+const active =
+  pathname === "/Home"
+    ? 2
+    : pathname === "/Profile"
+    ? 3
+    : pathname === "/Restore-Contacts"
+    ? 4
+    : 2;
+
 
   return (
     <TooltipProvider delayDuration={100}>
@@ -58,7 +68,7 @@ export default function HorizontalSidebarLocked() {
                   onClick={() => {
                     // Only trigger if not already active
                     if (active !== 2) {
-                      setActive(2);
+                      // setActive(2);
                     }
                   }}
                   className={`p-2 rounded-xl cursor-pointer transition-colors duration-200 ${
@@ -94,7 +104,7 @@ export default function HorizontalSidebarLocked() {
               <div
                 onClick={() => {
                   if (active !== 3) {
-                      setActive(3);
+                      // setActive(3);
                     }
                   }}
                 className={`p-2 rounded-xl cursor-pointer transition-colors duration-200 ${
@@ -137,7 +147,7 @@ export default function HorizontalSidebarLocked() {
               <div
                 onClick={() => {
                   if (active !== 4) {
-                      setActive(4);
+                      // setActive(4);
                     }
                   }}
                 className={`p-2 rounded-xl cursor-pointer transition-colors duration-200 ${
@@ -170,11 +180,12 @@ export default function HorizontalSidebarLocked() {
               <div
                 // onClick={() => setActive(8)}
                 onClick={logout}
-                className={`p-2 rounded-xl cursor-pointer transition-colors duration-200 ${
-                  active === 8
-                    ? "bg-[#4CBBA3] text-white"
-                    : "text-gray-700 hover:bg-gray-100"
-                }`}
+                // ${
+                //     active === 8
+                //     ? "bg-[#4CBBA3] text-white"
+                //     : "text-gray-700 hover:bg-gray-100"
+                // }
+                className={`p-2 rounded-xl cursor-pointer transition-colors duration-200 `}
               >
                 <LogOut className="size-6 max-[315px]:size-4" />
               </div>

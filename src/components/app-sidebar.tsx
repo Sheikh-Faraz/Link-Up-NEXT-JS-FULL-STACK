@@ -88,7 +88,10 @@ export function AppSidebar() {
           <div className="flex flex-col space-y-1.5 p-3 py-4 lg:py-3 border-b">
             <div className="flex items-center justify-between max-[315px]:flex-col max-[315px]:items-start">
               <h3 className="font-bold text-2xl">Chats</h3>
+  
+              {/* THE COMPONENT USED TO ADD USER BY SOMEONE'S ID */}
               <DialogDemo />
+
             </div>
           </div>
 

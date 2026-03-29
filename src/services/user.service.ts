@@ -4,7 +4,6 @@ import axiosInstance from "@/lib/axios";
 // DONE (9). TESTED (9/9), REMAINING (0), TOTAL (9)
 // --------------------------------------
 
-
 // 1. ✅ Done / Tested 
 export const getUsersApi = async () => {
   const res = await axiosInstance.get("/user/get-users");

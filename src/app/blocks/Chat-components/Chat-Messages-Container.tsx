@@ -358,14 +358,14 @@ function MessageBubble({
 
       {isOwn && <div className="text-xs text-gray-500 mr-1 flex justify-end">
         <span>{time}</span>
-        {seenby?.includes(selectedUser?._id || "") ? (
+        {/* {seenby?.includes(selectedUser?._id || "") ? (
           <span>{isOwn && <CheckCheck className={`size-4 mr-1 ml-2 text-green-500`} />}</span> 
           // <CheckCheck className="size-4 ml-2 text-green-500" />
         ) : (
           // <Check className="size-4 ml-2 text-gray-500" />
           <p>Some online compo here</p>
         //   <CheckCheck className={`size-4 mr-1 ml-2 ${onlineUsers.includes(selectedUser?._id || "") ? "text-green-500" : ""}`} />
-        )}      
+        )}       */}
         </div>
       }
     </div>

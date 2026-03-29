@@ -18,6 +18,9 @@ import { User } from "@/types/user.types";
 import { CredentialResponse } from "@react-oauth/google";
 import { googleLogout } from "@react-oauth/google";
 
+// Context
+import { useGlobalLoading } from "@/context/loading.context";
+
 
 interface AuthContextType {
   authUser: User | null;
@@ -38,6 +41,10 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
+
+  // Context 
+  const { setIsLoading } = useGlobalLoading();
+  
 
   const [authUser, setAuthUser] = useState<User | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
@@ -129,8 +136,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
 // For Logging Out
   const logout = async () => {
+    
     try {
-
+      // For showing the loading 
+      setIsLoading(true);
+      
+      
       // 🧹 Remove token from everywhere
       localStorage.removeItem("token");
       Cookies.remove("token");
@@ -146,7 +157,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     } catch (err) {
         toast.error(getErrorMessage(err, "Failed to logout"));
-        
+    } 
+    finally {
+      setIsLoading(false);
     }
   };
 

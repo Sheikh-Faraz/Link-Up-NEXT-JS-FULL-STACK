@@ -69,7 +69,7 @@ export default function ProfileSidebar({ open, onOpenChange, user }: ProfileSide
                 {user.fullName || "Unknown User"}
             </h3>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Status:{" "}
+              {/* Status:{" "} */}
               {/* <span className={`${onlineUsers.includes(user._id || "") ? "text-green-500" : "text-red-500"} font-medium`}>
                 {onlineUsers.includes(user._id || "") ? "Online" : "Offline"}
               </span> */}

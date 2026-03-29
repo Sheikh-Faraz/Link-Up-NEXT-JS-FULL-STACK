@@ -9,4 +9,8 @@ export interface User {
   isDeletedFor: string[];
   provider?: string;
   createdAt: string;
+
+  // 🔥 ADD THESE (frontend-only helpers)
+  isBlocked?: boolean;     // I blocked them
+  hasBlockedMe?: boolean;  // they blocked me
 }

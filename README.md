@@ -1,15 +1,16 @@
 TO DO's
 
-<!-- 1. Fix the layout of the locked icons sidebar showing on the login & singup pages      <-- DONE -->
-<!-- 2. Fix if there is any issue regarding showing profile pic link etc                    <-- DONE -->
-<!-- 9. Fix the Length of the sidebar locked                                                <-- DONE -->
+<!-- 1. Fix the layout of the locked icons sidebar showing on the login & singup pages                              <-- DONE -->
+<!-- 2. Fix if there is any issue regarding showing profile pic link etc                                            <-- DONE -->
+<!-- 9. Fix the Length of the sidebar locked                                                                        <-- DONE -->
+<!-- 8. Add the live sending and recieving message feature as Socket.io will not work with so look into Pusher      <-- DONE -->
 
 3. Add the loading showing feature on the buttons
 4. Add the auto close functionality on the dialog boxes and beautify them 
 5. Beautify the reply showing feature and beautify the replying to box for documents and etc
 6. Beautify the message showing of document selected and maybe voice message send
 7. Fix/Beautify the voice message sending functionality
-8. Add the live sending and recieving message feature as Socket.io will not work with so look into Pusher
+
 
 10. Fix the ui when the user is blocked and also beautify it 
 11. Add a Loading state or a ui loader when unblocked, blocked, deleted etc

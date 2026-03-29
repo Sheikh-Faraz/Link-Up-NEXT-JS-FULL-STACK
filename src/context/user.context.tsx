@@ -27,6 +27,10 @@ import { getErrorMessage } from "@/lib/error";
 // authUser from Auth Context
 import { useAuth } from "./auth.context";
 
+// For realtime functionality
+import Pusher from "pusher-js";
+import { useEffect } from "react";
+
 
 interface userContextType {
 
@@ -35,18 +39,18 @@ interface userContextType {
     users: User[];
     isUsersLoading: boolean;
     
-    fetchUser: () => Promise<void>;                      // DONE
+    fetchUser: () => Promise<void>;                             // DONE
 
     updateUserProfile: (formData: FormData) => Promise<void>;
-    // updateUserProfile: (data: unknown) => Promise<void>; // DONE
-    selectUser: (user: User | null) => void;             // DONE
-    getUsers: () => Promise<void>;                       // DONE
-    addContact: (UserId: string) => Promise<void>;       // DONE
-    blockUser: (userId: string) => Promise<void>;        // DONE
-    unblockUser: (userId: string) => Promise<void>;      // DONE
-    deleteUser: (userId: string) => Promise<void>;       // DONE
-    getHiddenOrBlockedUsers: () => Promise<void>;        // DONE
-    restoreUser: (userId: string) => Promise<void>;      // DONE
+    // updateUserProfile: (data: unknown) => Promise<void>;     // DONE
+    selectUser: (user: User | null) => void;                    // DONE
+    getUsers: () => Promise<void>;                              // DONE
+    addContact: (UserId: string) => Promise<void>;              // DONE
+    blockUser: (userId: string) => Promise<void>;               // DONE
+    unblockUser: (userId: string) => Promise<void>;             // DONE
+    deleteUser: (userId: string) => Promise<void>;              // DONE
+    getHiddenOrBlockedUsers: () => Promise<void>;               // DONE
+    restoreUser: (userId: string) => Promise<void>;             // DONE
 
 }
 
@@ -60,6 +64,84 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Importing and authUser from Auth Context to use in function
   const { authUser, setAuthUser } = useAuth();
+
+
+  // FOR REALTIME
+  useEffect(() => {
+  if (!authUser?._id) return;
+
+  const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
+    cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
+  });
+
+  const channel = pusher.subscribe(`user-${authUser._id}`);
+
+  // 🔴 BLOCK EVENT
+  channel.bind("user-blocked", (data: unknown) => {
+    const { blockedBy, targetUserId } = data as { blockedBy: string; targetUserId: string };
+
+    // If I blocked someone
+    if (blockedBy === authUser._id) {
+      setUsers((prev) =>
+        prev.map((u) =>
+          u._id === targetUserId ? { ...u, isBlocked: true } : u
+        )
+      );
+    }
+
+    // if (blockedBy === authUser._id) {
+    //   setAuthUser({
+    //     ...authUser,
+    //     blockedUsers: [...(authUser?.blockedUsers || []), targetUserId],
+    //   } as User);
+    // }
+
+    // If I got blocked
+    if (targetUserId === authUser._id) {
+      setUsers((prev) =>
+        prev.map((u) =>
+          u._id === blockedBy ? { ...u, hasBlockedMe: true } : u
+        )
+      );
+    }
+
+    // if (targetUserId === authUser._id) {
+    //   setUsers((prev) =>
+    //     prev.map((u) =>
+    //       u._id === blockedBy ? { ...u, hasBlockedMe: true } : u
+    //     )
+    //   );
+    // }
+  });
+
+  // 🟢 UNBLOCK EVENT
+  channel.bind("user-unblocked", (data: unknown) => {
+    const { unblockedBy, targetUserId } = data as { unblockedBy: string; targetUserId: string };
+
+    if (unblockedBy === authUser._id) {
+      setAuthUser({
+        ...authUser,
+        blockedUsers: (authUser?.blockedUsers || []).filter(
+          (id: string) => id !== targetUserId
+        ),
+      } as User);
+    }
+
+    if (targetUserId === authUser._id) {
+      setUsers((prev) =>
+        prev.map((u) =>
+          u._id === unblockedBy ? { ...u, hasBlockedMe: false } : u
+        )
+      );
+    }
+  });
+
+  return () => {
+    channel.unbind_all();
+    channel.unsubscribe();
+  };
+}, [authUser]);
+
 
 
 //   For Selecting User

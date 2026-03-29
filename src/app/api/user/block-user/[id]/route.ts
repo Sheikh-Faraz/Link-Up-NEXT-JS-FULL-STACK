@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import User from "@/models/User";
 import { getCurrentUser } from "@/lib/getCurrentUser";
 
+// Pusher for realtime ui change
+import { pusher } from "@/lib/pusher"; // 👈 import this
+
 
 export async function PATCH( req: NextRequest, {params} : {params: Promise<{ id: string }>} ) {
   try {
@@ -40,6 +43,19 @@ export async function PATCH( req: NextRequest, {params} : {params: Promise<{ id:
     // 🔹 Add to blocked list
     currentUser.blockedUsers.push(id);
     await currentUser.save();
+
+    // FOR REALTIME UI UPDATE
+    await pusher.trigger(`user-${id}`, "user-blocked", {
+      blockedBy: currentUser._id,
+      targetUserId: id,
+    });
+
+    await pusher.trigger(`user-${currentUser._id}`, "user-blocked", {
+      blockedBy: currentUser._id,
+      targetUserId: id,
+    });
+
+
 
     return NextResponse.json({
       message: "User blocked successfully",

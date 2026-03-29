@@ -3,6 +3,12 @@
 import toast from "react-hot-toast";
 import { createContext, useContext, useState } from "react";
 
+// For realtime functionality
+import Pusher from "pusher-js";
+import { useEffect } from "react";
+import { useUser } from "./user.context"; // 👈 IMPORTANT (you need selectedUser)
+
+
 // APIs
 import { 
 
@@ -51,8 +57,48 @@ export const MessageProvider = ({ children }: { children: React.ReactNode }) => 
   const [messages, setMessages] = useState<Message[]>([]);
   const [isMessagesLoading, setIsMessagesLoading] = useState(false);
 
-  // Importing and authUser from Auth Context to use in markAsSeen function
+  // Importing authUser from Auth Context to use in markAsSeen function
   const { authUser } = useAuth();
+  
+  // Importing selectedUser from User Context for realtime feature
+  const { selectedUser } = useUser();
+
+
+  // FOR PUSHER AND REALTIME MESSAGES
+  useEffect(() => {
+  if (!authUser || !selectedUser) return;
+
+  const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
+    cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
+  });
+
+  // 🔥 SAME LOGIC AS BACKEND
+  const chatId =
+    authUser._id < selectedUser._id
+      ? `${authUser._id}-${selectedUser._id}`
+      : `${selectedUser._id}-${authUser._id}`;
+
+  const channel = pusher.subscribe(`chat-${chatId}`);
+
+  channel.bind("new-message", (newMessage: Message) => {
+    // console.log("PUSHER RECEIVED:", newMessage); // ✅ debug
+
+    setMessages((prev) => {
+      // ❗ prevent duplicates
+      if (prev.some((msg) => msg._id === newMessage._id)) return prev;
+
+      return [...prev, newMessage];
+    });
+  });
+
+  return () => {
+    channel.unbind_all();
+    channel.unsubscribe();
+  };
+}, [selectedUser, authUser]);
+
+
+
 
 
 //  For Getting Messages
@@ -98,7 +144,13 @@ const sendMessage = async ( receiverId: string, text: string, replyTo?: ReplyToM
     const { data } = await sendMessageApi(formData);
     const newMessage = data.sendedMessage; // Adjust this based on your actual response structure
 
-    setMessages((prev) => [...prev, newMessage]);
+    // setMessages((prev) => [...prev, newMessage]);
+    // Update the code so no duplicate issue occur with pusher for realtime message sending 
+    setMessages((prev) => {
+     // prevent duplicates
+      if (prev.some((m) => m._id === newMessage._id)) return prev;
+    return [...prev, newMessage];
+    });
 
   } catch (err) {
         toast.error(getErrorMessage(err, "Failed to send message"));

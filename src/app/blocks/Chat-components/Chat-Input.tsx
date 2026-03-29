@@ -248,9 +248,12 @@ const handleVoiceBlob = async (blob: Blob) => {
     </div>
   </div>
 )}
+
+
+      {/* ======================================================================================================== */}
+              {/* Main input area */}
       {/* ======================================================================================================== */}
 
-      {/* Main input area */}
        {authUser?.blockedUsers?.includes(selectedUser?._id || "") ? 
        (
         <div className="p-4 text-center text-red-500 font-medium">
@@ -283,7 +286,8 @@ const handleVoiceBlob = async (blob: Blob) => {
           </div>
         </div>
        )
-       : selectedUser?.blockedUsers?.includes(authUser?._id || "") ? (
+      //  : selectedUser?.blockedUsers?.includes(authUser?._id || "") ? (
+       : selectedUser?.hasBlockedMe ? (
           <div className="p-4 text-center text-red-500 font-medium">
             You were blocked by this user. You can’t send messages.
           </div>

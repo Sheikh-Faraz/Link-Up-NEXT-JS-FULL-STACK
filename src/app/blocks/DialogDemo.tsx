@@ -13,7 +13,7 @@ import {
 
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { CirclePlus } from "lucide-react"
+import { CirclePlus, LoaderCircle } from "lucide-react"
 import { useState, FormEvent } from "react";
 
 // Context
@@ -22,7 +22,7 @@ import { useUser } from "@/context/user.context";
 export function DialogDemo() {
 
   // Context
-  const { addContact } = useUser();
+  const { addContact, isUsersLoading } = useUser();
 
   const [userIdInput, setUserIdInput] = useState("");
 
@@ -52,14 +52,14 @@ const handleAddContact = async (e: FormEvent<HTMLFormElement>) => {
         <form onSubmit={handleAddContact}>
           <DialogHeader>
             <DialogTitle>Add new contact</DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="pt-1">
                 Enter the UserId of the contact you want to add. 
                 <span className="block pt-1">
                   Example: SGH-15A-456987
                 </span>
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 my-2">
+          <div className="grid gap-4 my-4 ">
             <div className="grid gap-3">
               <Label htmlFor="name-1">UserId</Label>
               <Input
@@ -79,9 +79,13 @@ const handleAddContact = async (e: FormEvent<HTMLFormElement>) => {
                 type="submit"   
                 className= "bg-green-600 hover:bg-green-700"
               >
-                <span className="text-white">
-                  Add
-                </span>
+                {isUsersLoading ? 
+                  <LoaderCircle className="animate-spin size-5 max-[320px]:size-4 text-white"/> 
+                    : 
+                  <span className="text-white">
+                    Add
+                  </span>
+                }
               </Button>
             </DialogClose>
           </DialogFooter>

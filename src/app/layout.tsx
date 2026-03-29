@@ -1,10 +1,11 @@
 import "./globals.css";
+
 import { Toaster } from "react-hot-toast";
 
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 
-// import { GoogleOAuthProvider } from "@react-oauth/google";
 import  SidebarLocked  from "@/app/blocks/Sidebar-locked";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 // Contexts
 import { LoadingProvider } from "@/context/loading.context";
@@ -12,6 +13,8 @@ import { AuthProvider } from "@/context/auth.context";
 import { UserProvider } from "@/context/user.context";
 import { MessageProvider } from "@/context/messages.context";
 import { UIProvider } from "@/context/ui.context";
+
+import SidebarWrapper from "./sidebarwrapper";
 
 
 export const metadata = {
@@ -27,7 +30,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="flex flex-col lg:flex-row max-lg:overflow-hidden">
-      {/* <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!}> */}
+
+      <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!}>
         
         {/* Loading Context */}
         <LoadingProvider>  
@@ -44,10 +48,8 @@ export default function RootLayout({
                 {/* Messages Context */}
                 <MessageProvider>
 
-                          {/* Navigaiton sidebar */}
-                        <div className="hidden lg:block">
-                          <SidebarLocked />
-                         </div>
+                    {/* Used to show sidebar if the route is not login or signup */}
+                      <SidebarWrapper />
 
                     {/* Childer, Tooltip & Toaster */}
                     <TooltipProvider>
@@ -71,7 +73,8 @@ export default function RootLayout({
            </AuthProvider>
         </LoadingProvider>
         
-      {/* </GoogleOAuthProvider> */}
+      </GoogleOAuthProvider>
+
       </body>
     </html>
   );

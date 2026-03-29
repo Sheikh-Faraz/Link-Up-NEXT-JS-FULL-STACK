@@ -1,17 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
+// import { useState, useEffect } from "react";
 import Link  from "next/link";
 import { usePathname } from "next/navigation";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { MessageCircleMore, MessageCircle, User, Users, LogOut } from "lucide-react";
+import Image from "next/image";
 
+import { MessageCircleMore, MessageCircle, User, Users, LogOut } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+// Contexts
 import { useAuth } from "@/context/auth.context";
 import { useUser } from "@/context/user.context";
 import { useGlobalLoading } from "@/context/loading.context";
 
 import LinkUpLogo from "@/app/images/Linkup-logo.png"
-import Image from "next/image";
 
 export default function HorizontalSidebarLocked() {
   const pathname = usePathname(); // gives current route like "/Home", "/Profile", etc.

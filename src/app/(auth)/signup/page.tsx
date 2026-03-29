@@ -1,5 +1,8 @@
 import { SignUpForm } from "@/components/signup-form"
-import SignUpImg from "../../images/Sign-Up-img.png"
+// import SignUpImg from "../../images/Sign-Up-img.png"
+// import SignUpImg from "../../images/signup-img.jpg"
+// import SignUpImg from "../../images/signup.jpg"
+import SignUpImg from "../../images/signup-I.jpg"
 import LinkUpLogo from "../../images/Linkup-logo.png"
 import Image from "next/image";
 
@@ -27,14 +30,24 @@ export default function SignUpPage() {
           </div>
         </div>
       </div>
-      <div className="relative hidden lg:block m-auto">
+
+      {/* <div className="relative hidden lg:block m-auto">
         <Image
           src={SignUpImg.src}
           alt="Image"
           height={0}
           width={500}
         />
-      </div>
+      </div> */}
+             <div className="relative w-full h-full">
+            <Image
+              src={SignUpImg.src}
+              alt="signup img"
+              fill
+              priority
+              quality={100}
+            />
+          </div>
     </div>
   )
 }

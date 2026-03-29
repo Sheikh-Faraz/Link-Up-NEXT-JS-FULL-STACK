@@ -1,21 +1,24 @@
 "use client";
-import Image from "next/image";
+
 import { useState } from "react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter, SheetTrigger } from "@/components/ui/sheet";
+import Image from "next/image";
 import avatar from "@/app/images/avatarpic.png";
+
+import { Facebook, X, Linkedin, Instagram, Dribbble } from "lucide-react";
+
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Facebook, X, Linkedin, Instagram, Dribbble } from "lucide-react";
 
 // Contexts
 import { useUser } from "@/context/user.context";
 import { useAuth } from "@/context/auth.context";
 
-interface UpdatedProfileData {
-  fullName: string;
-  about: string;
-  profilePic?: string;
-}
+// interface UpdatedProfileData {
+//   fullName: string;
+//   about: string;
+//   profilePic?: string;
+// }
 
 export default function EditProfile() {
 
@@ -62,11 +65,23 @@ export default function EditProfile() {
 
   const UserPic = profilePic;
 
-  const imageUrl = UserPic?.startsWith("http")
-  ? UserPic
-  : `${BASE_URL}${UserPic}`;
+  // const imageUrl = UserPic?.startsWith("http")
+  // ? UserPic
+  // : `${BASE_URL}${UserPic}`;
+
+  const imageUrl = (() => {
+  if (!UserPic) return avatar.src;
+
+  if (UserPic.startsWith("http")) return UserPic;
+  if (UserPic.startsWith("data:")) return UserPic;
+
+  return `${BASE_URL}${UserPic}`;
+  })();
 
   return (
+
+    // BTW THIS FOR THE ONE THE OPENS ON USER'S PERSONAL PROFILE-PAGE  ------------------------------
+
     <Sheet>
       <SheetTrigger asChild>
         <Button
@@ -91,6 +106,7 @@ export default function EditProfile() {
           <div className="flex flex-col items-center text-center mb-10">
             <div className="relative h-24 w-24 rounded-full bg-gray-100 flex items-center justify-center mb-3 overflow-hidden">
               <Image
+                // src={profilePic === "" ? avatar.src : imageUrl}
                 src={profilePic === "" ? avatar.src : imageUrl}
                 // src={profilePic}
                 alt="Profile"
@@ -136,7 +152,8 @@ export default function EditProfile() {
               />
             </div>
 
-            <div className="my-4">
+            {/* FOR LATER */}
+            {/* <div className="my-4">
               <p className="font-semibold mb-2">Social Links</p>
               <div className="flex items-center gap-3">
                 {[Facebook, X, Linkedin, Instagram, Dribbble].map((Icon, idx) => (
@@ -149,7 +166,7 @@ export default function EditProfile() {
                   </a>
                 ))}
               </div>
-            </div>
+            </div> */}
           </div>
 
           <SheetFooter className="mt-8">

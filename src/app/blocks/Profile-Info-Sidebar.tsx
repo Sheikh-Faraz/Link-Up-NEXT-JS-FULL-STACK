@@ -1,12 +1,14 @@
 "use client";
+
 import Image from "next/image";
+// import { useEffect } from "react";
+
+// import { Facebook, X, Linkedin, Instagram, Dribbble } from "lucide-react";
+
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
+
+
 import Avatar from "@/app/images/avatarpic.png";
-import { Facebook, X, Linkedin, Instagram, Dribbble } from "lucide-react";
-
-import { useEffect } from "react";
-
-// import { useChat } from "@/app/store/Chatinfo";
 
 interface ProfileSidebarProps {
   open: boolean;
@@ -28,14 +30,15 @@ export default function ProfileSidebar({ open, onOpenChange, user }: ProfileSide
 //   }, [previewSidebar]);
 
   const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL; 
-
-  const UserPic = user.profilePic;
-
-  const imageUrl = UserPic?.startsWith("http")
-  ? UserPic
-  : `${BASE_URL}${UserPic}`;
+    const imageUrl =
+      !user.profilePic || user.profilePic.trim() === ""
+        ? Avatar.src
+        : user.profilePic;
 
   return (
+
+    // BTW THIS IS THE ONE THE SHOWS ON THE HOME/CHATS PAGE WHEN TO VIEW USER'S INFO  --------------
+
     <Sheet open={open} onOpenChange={onOpenChange}>
 
       <SheetContent
@@ -54,7 +57,8 @@ export default function ProfileSidebar({ open, onOpenChange, user }: ProfileSide
           <div className="flex flex-col items-center text-center mb-12">
             <div className="h-24 w-24 rounded-full bg-gray-100 flex items-center justify-center mb-3">
               <Image
-                src={user.profilePic === "" ? Avatar.src : imageUrl}
+                // src={user.profilePic === "" ? Avatar.src : imageUrl}
+                src={imageUrl}
                 alt="Profile"
                 width={96}
                 height={96}
@@ -89,9 +93,10 @@ export default function ProfileSidebar({ open, onOpenChange, user }: ProfileSide
             </div>
 
             
-            <SheetFooter>
+            {/* <SheetFooter> */}
 
-            <div className="my-6">
+            {/* For later */}
+            {/* <div className="my-6">
               <p className="font-semibold mb-2">SOCIAL LINKS</p>
               <div className="flex items-center gap-3">
                 <a
@@ -125,8 +130,8 @@ export default function ProfileSidebar({ open, onOpenChange, user }: ProfileSide
                   <Dribbble className="h-4 w-4" />
                 </a>
               </div>
-            </div>
-                  </SheetFooter>
+            </div> */}
+                    {/* </SheetFooter> */}
           </div>
         </div>
       </SheetContent>   

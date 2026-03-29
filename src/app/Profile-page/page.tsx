@@ -10,7 +10,7 @@ import { Tooltip, TooltipContent, TooltipTrigger, } from "@/components/ui/toolti
 import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupButton } from "@/components/ui/input-group";
 import { Spinner } from "@/components/ui/spinner";
 
-import EditProfile from "@/app/blocks/EditProfile";
+import EditProfile from "@/app/blocks/Edit-Profile-components/EditProfile";
 
 // Contexts
 import { useAuth } from "@/context/auth.context";
@@ -58,7 +58,8 @@ export default function ProfilePage() {
   : `${BASE_URL}${UserPic}`;
 
   return (
-    <div className="h-full w-full pt-20 max-[425]:pt-10 overflow-y-auto bg-darkbg">
+    // {/* <div className="h-full w-full pt-20 max-[425]:pt-10 overflow-y-auto bg-darkbg"> */}
+    <div className="h-screen lg:h-[95vh] w-full pt-20 max-[425]:pt-10 overflow-y-auto bg-darkbg">
       <div className="max-w-2xl mx-auto">
         <div className="bg-base-300 rounded-xl p-6 space-y-8">
           <div className="text-center">

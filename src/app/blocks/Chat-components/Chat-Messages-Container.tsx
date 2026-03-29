@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Edit, Trash2, Ellipsis, MessageSquareText, CornerUpLeft, CheckCheck, Copy } from "lucide-react";
 
 
-import MessageSkeleton from "./MessageSkeleton";
+import MessageSkeleton from "../Skeletons/MessageSkeleton";
 
 // Contexts
 import { useUser } from "@/context/user.context";

@@ -1,12 +1,11 @@
-// utils/error.ts
+// 
+
+
 
 export function getErrorMessage(
   err: unknown,
   fallback = "Something went wrong"
 ): string {
-  if (typeof err === "string") return err;
-
-  if (err instanceof Error) return err.message;
 
   if (
     err &&
@@ -17,6 +16,14 @@ export function getErrorMessage(
   ) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return (err as any).response.data.message;
+  }
+
+  if (err instanceof Error) {
+    return err.message;
+  }
+
+  if (typeof err === "string") {
+    return err;
   }
 
   return fallback;

@@ -1,7 +1,7 @@
 import axiosInstance from "@/lib/axios";
 
 // --------------------------------------
-// DONE (9). TESTED (8/9), REMAINING (0), TOTAL (9)
+// DONE (9). TESTED (9/9), REMAINING (0), TOTAL (9)
 // --------------------------------------
 
 
@@ -47,9 +47,9 @@ export const getHiddenUsersApi = async () => {
 };
 
 
-// 7. ✅ Done /  
+// 7. ✅ Done / Tested
 export const restoreUserApi = async (userId: string) => {
-  const res = await axiosInstance.post(`/user/restore-user/${userId}`);
+  const res = await axiosInstance.patch(`/user/restore-user/${userId}`);
   return res;
 };
 

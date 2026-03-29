@@ -18,9 +18,14 @@ export default function ContactBlock({
 
   const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
 
-  const imageUrl = profilePic?.startsWith("http")
-  ? profilePic
-  : `${BASE_URL}${profilePic}`;
+  // const imageUrl = profilePic?.startsWith("http")
+  // ? profilePic
+  // : `${BASE_URL}${profilePic}`;
+
+  const imageUrl =
+    !profilePic || profilePic.trim() === ""
+      ? avatar.src
+      : profilePic;
 
   return (
     <div className="flex items-center justify-between p-3 hover:bg-gray-100 rounded-lg cursor-pointer"

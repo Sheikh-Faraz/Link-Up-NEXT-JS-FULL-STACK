@@ -23,7 +23,7 @@ import { DialogDemo } from "@/app/blocks/DialogDemo";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 import { SquarePlus } from 'lucide-react';
-import ProfileSidebar from "@/app/blocks/Profile-Sidebar";
+import ProfileSidebar from "@/app/blocks/Profile-Info-Sidebar";
 
 interface User {
   _id: string;
@@ -39,6 +39,27 @@ export function AppSidebar() {
   const { selectUser, users, isUsersLoading, getUsers, blockUser, unblockUser, deleteUser } = useUser();
   const { authUser } = useAuth();
 
+  // Base url for images
+  const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL; 
+
+  // FOR IMAGES OF USER TO SHOW. A FUNCTION FOR IT 
+  const getProfilePic = (pic?: string) => {
+  if (!pic || pic.trim() === "") return avatar.src;
+
+  if (pic.startsWith("http") || pic.startsWith("data:")) return pic;
+
+  const cleanPath = pic.startsWith("/") ? pic : `/${pic}`;
+
+  return `${BASE_URL}${cleanPath}`;
+  };
+  // const getProfilePic = (pic?: string) => {
+  // if (!pic) return avatar.src;
+
+  // if (pic.startsWith("http")) return pic;
+  // if (pic.startsWith("data:")) return pic;
+
+  // return `${BASE_URL}${pic}`;
+  // };
 
   const [search, setSearch] = useState("");
   
@@ -110,6 +131,7 @@ export function AppSidebar() {
                         id={user._id || ""}
                         name={user.fullName ?? "Unknown"}
                         profilePic={user.profilePic ?? avatar.src}
+                        // profilePic={getProfilePic(user.profilePic)}
                         // avatar={avatar.src}
                         onClick={() => selectUser(user)}
                         />

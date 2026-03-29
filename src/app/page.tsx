@@ -1,8 +1,8 @@
 "use client";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import ChatContainer from "@/app/blocks/ChatContainer";
-import NoChatSelected from "@/app/blocks/NoChatSelected";
+import ChatContainer from "@/app/blocks/Chat-components/ChatContainer";
+import NoChatSelected from "@/app/blocks/Skeletons/NoChatSelected";
 import { useEffect } from "react";
 
 // Contexts

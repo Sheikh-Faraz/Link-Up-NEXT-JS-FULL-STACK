@@ -1,17 +1,21 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
 import { MessageCircle, User, Users, LogOut } from "lucide-react";
+
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 // Contexts
 import { useAuth } from "@/context/auth.context";
 import { useUser } from "@/context/user.context";
 import { useGlobalLoading } from "@/context/loading.context";
 
+
 import LinkUpLogo from "@/app/images/Linkup-logo.png";
-import Image from "next/image";
+
 
 export default function SidebarLocked() {
   const pathname = usePathname();
@@ -50,7 +54,7 @@ export default function SidebarLocked() {
                   selectUser(null);
                   setIsLoading(true);
                 }}
-                className={iconStyle("/Home")}
+                className={iconStyle("/")}
               >
                 <MessageCircle className="size-6" />
               </Link>   
@@ -64,12 +68,12 @@ export default function SidebarLocked() {
           <Tooltip>
             <TooltipTrigger asChild>
               <Link
-                href="/Profile"
+                href="/Profile-page"
                 onClick={() => {
                   selectUser(null);
                   setIsLoading(true);
                 }}
-                className={iconStyle("/Profile")}
+                className={iconStyle("/Profile-page")}
               >
                 <User className="size-6" />
               </Link>
@@ -83,12 +87,12 @@ export default function SidebarLocked() {
           <Tooltip>
             <TooltipTrigger asChild>
               <Link
-                href="/Restore-Contacts"
+                href="/Restore-Contacts-page"
                 onClick={() => {
                   selectUser(null);
                   setIsLoading(true);
                 }}
-                className={iconStyle("/Restore-Contacts")}
+                className={iconStyle("/Restore-Contacts-page")}
               >
                 <Users className="size-6" />
               </Link>

@@ -1,6 +1,8 @@
 import { LoginForm } from "@/components/login-form"
 import LinkUpLogo from "../../images/Linkup-logo.png"
-import LoginImg from "../../images/Login-Side-img-white.png"
+// import LoginImg from "../../images/Login-Side-img-white.png"
+// import LoginImg from "@/app/images/Login-Img.png"
+import LoginImg from "@/app/images/for-login.jpg"
 import Image from "next/image";
 
 export default function LogInPage() {
@@ -21,20 +23,37 @@ export default function LogInPage() {
           </a>
         </div>
         <div className="flex flex-1 items-center justify-center">
+
           <div className="w-full max-w-xs">
+
+            {/* Log-In Form */}
             <LoginForm />
-            {/* <p>There was a login form here </p> */}
+
           </div>
+
         </div>
       </div>
-      <div className="relative hidden lg:block m-auto">
+      {/* <div className="relative hidden lg:block m-auto"> */}
+      {/* <div className="relative hidden lg:block">
         <Image
           src={LoginImg.src}
           alt="Image"
           height={0}
-          width={500}
+          width={0}
+          className="w-full h-full"
+          // width={500}
         />
-      </div>
+      </div> */}
+       <div className="relative w-full h-full">
+      <Image
+        src={LoginImg.src}
+        alt="login img"
+        fill
+        className="object-cover"
+        priority
+        quality={100}
+      />
+    </div>
     </div>
   )
 }

@@ -1,26 +1,31 @@
 "use client"
 
 import { useState } from "react"
+import { FormEvent } from "react";
+
+import { GoogleLogin } from "@react-oauth/google";
+
 import { cn } from "@/lib/utils"
+
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupButton } from "@/components/ui/input-group";
 import { Tooltip, TooltipContent, TooltipTrigger, } from "@/components/ui/tooltip"
-import { Eye, EyeOff, Mail, Lock } from "lucide-react"
-import { FormEvent } from "react";
-
-import { useAuth } from "@/context/auth.context";
 import { Spinner } from "@/components/ui/spinner"
 
-// import { GoogleLogin } from "@react-oauth/google";
+import { Eye, EyeOff, Mail, Lock } from "lucide-react"
+
+// Context
+import { useAuth } from "@/context/auth.context";
 
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"form">) {
-  
-  const { login, isLoggingIn } = useAuth();
+ 
+  // Context
+  const { login, isLoggingIn, googleLogin } = useAuth();
   
   const [showPassword, setShowPassword] = useState(false)
 
@@ -58,7 +63,6 @@ export function LoginForm({
                     value={formData.email}
                     disabled={isLoggingIn}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-
                   />
             
                   <InputGroupAddon >
@@ -134,17 +138,22 @@ export function LoginForm({
           </span>
         </div>
 
-        {/* <GoogleLogin
-                  onSuccess={googleLogin}
-                  onError={() => console.log("Login Failed")}
-                /> */}
+        <GoogleLogin
+            onSuccess={googleLogin}
+            onError={() => console.log("Login Failed")}
+            />
+
       </div>
+
       <div className="text-center text-sm">
         Don&apos;t have an account?{" "}
-        <a href="/signup" className="underline underline-offset-4 hover:text-green-600">
-          Sign up
-        </a>
+
+          <a href="/signup" className="underline underline-offset-4 hover:text-green-600">
+            Sign up
+          </a>
+
       </div>
+
     </form>
   )
 }

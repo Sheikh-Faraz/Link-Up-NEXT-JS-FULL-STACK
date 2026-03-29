@@ -41,7 +41,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const [authUser, setAuthUser] = useState<User | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const [ isSigningUp, setIsSigningUp] = useState(false);
+  const [isSigningUp, setIsSigningUp] = useState(false);
 
   // For logging in with email and password
   const login = async (formData: unknown) => {
@@ -74,17 +74,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (!credentialResponse.credential) return;
 
     // setIsLoading(true);
-    setIsLoggingIn(true);
-
+    
     try {
-      const token = credentialResponse.credential;
-      const { data } = await googleLoginApi(token);
+      setIsLoggingIn(true);
+      
+      const res = await googleLoginApi(credentialResponse.credential);
 
-      localStorage.setItem("token", data.token);
-      Cookies.set("token", data.token, { expires: 7, sameSite: "Strict" });
+      localStorage.setItem("token", res.data.token);
+      Cookies.set("token", res.data.token, { expires: 7, sameSite: "Strict" });
 
       // setUser(jwtDecode(data.token));
-      setAuthUser(data.user);
+      setAuthUser(res.data.user);
 
       // 👇 Redirect after login
       router.push("/");

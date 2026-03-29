@@ -4,8 +4,8 @@ import { useEffect } from "react";
 
 import { SidebarProvider } from "@/components/ui/sidebar";
 
-import RestoreSidebar  from "@/app/blocks/Restore-Sidebar";
-import RestoreChatContainer from "@/app/blocks/Restore-Chat-Container";
+import RestoreSidebar  from "@/app/blocks/Restore-Chat-components/Restore-Chat-Sidebar";
+import RestoreChatContainer from "@/app/blocks/Restore-Chat-components/Restore-Chat-Container";
 import NoChatSelected from '@/app/blocks/NoChatSelected copy';
 
 // Contexts

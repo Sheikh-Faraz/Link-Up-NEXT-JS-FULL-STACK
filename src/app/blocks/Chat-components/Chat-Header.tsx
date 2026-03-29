@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import ProfileSidebar from "./Profile-Sidebar";
+import ProfileSidebar from "../Profile-Info-Sidebar";
 
 // Contexts
 // import { useChat } from "@/app/store/Chatinfo";
@@ -57,10 +57,13 @@ export default function ChatHeader() {
         />
         <div>
           <h3 className="font-semibold">{selectedUser?.fullName || "User Name"}</h3>
-          <p>There was online user comp here</p>
+          {/* <p>There was online user comp here</p> */}
           {/* <p className={`text-sm ${onlineUsers.includes(selectedUser?._id || "") ? "text-green-600" : "text-red-600"}`}>
             {onlineUsers.includes(selectedUser?._id || "") ? "Online" : "Offline"}
           </p> */}
+          <p className="text-sm">
+            last Seen 2:03 pm
+          </p>
         </div>
       </div>
 

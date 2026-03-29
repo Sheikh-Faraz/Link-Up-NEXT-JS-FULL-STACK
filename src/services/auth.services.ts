@@ -2,7 +2,7 @@ import axiosInstance from "@/lib/axios";
 
 
 // --------------------------------------
-// DONE (3). TESTED (2/3), REMAINING (0), TOTAL (4)
+// DONE (4). TESTED (4/4), REMAINING (0), TOTAL (4)
 // --------------------------------------
 
 
@@ -24,9 +24,9 @@ export const signupApi = async (data: unknown) => {
   return res;
 };
 
-// 4. 
+// 4. ✅ Done/ Tested
 export const googleLoginApi = async (token: string) => {
-  const res = await axiosInstance.post("/auth/google-login", { token });
+  const res = await axiosInstance.post("/auth/google", { token });
   return res;
 };
 

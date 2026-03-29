@@ -4,7 +4,9 @@ import ChatInput from "./Chat-Input"
 
 export default function ChatContainer() {    
   return (
-    <div className="flex flex-col border rounded-lg h-screen">
+    // <div className="flex flex-col border rounded-lg h-screen">
+      // {/* <div className="flex-1 overflow-y-auto h-screen"> */}
+    <div className="flex flex-col border rounded-lg h-screen lg:h-[95vh]">
       <ChatHeader />
     
       <div className="flex-1 overflow-y-auto min-h-0">

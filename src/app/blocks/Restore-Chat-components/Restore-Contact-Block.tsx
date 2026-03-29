@@ -1,5 +1,7 @@
 import Image from "next/image";
+
 import avatar from '@/app/images/avatarpic.png';
+
 import { Badge } from "@/components/ui/badge";
 
 interface ContactProps {

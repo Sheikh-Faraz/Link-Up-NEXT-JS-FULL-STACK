@@ -84,7 +84,7 @@ const active =
                     <MessageCircle className="size-6 max-[315px]:size-4" /> 
                   ) : (
                     // If not active, make it clickable
-                    <Link href="/Home"
+                    <Link href="/"
                      onClick={() => {
                       selectUser(null);
                       setIsLoading(true);
@@ -119,7 +119,7 @@ const active =
                     // If active, show just icon (no Link)
                     <User className="size-6 max-[315px]:size-4" />
                   ) : (
-                    <Link href="/Profile" onClick={() => {
+                    <Link href="/Profile-page" onClick={() => {
                       selectUser(null);
                       setIsLoading(true);
                       }}>
@@ -162,7 +162,7 @@ const active =
                     // If active, show just icon (no Link)
                     <Users className="size-6 max-[315px]:size-4" />
                   ) : (
-                    <Link href="/Restore-Contacts" onClick={() => {
+                    <Link href="/Restore-Contacts-page" onClick={() => {
                       selectUser(null);
                       setIsLoading(true);
                       }}>

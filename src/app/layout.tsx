@@ -29,7 +29,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="flex flex-col lg:flex-row max-lg:overflow-hidden">
+      {/* <body className="flex"> */}
+      {/* <body className="flex flex-col lg:flex-row max-lg:overflow-hidden"> */}
+      <body className="flex flex-col-reverse lg:flex-row max-lg:overflow-hidden"> 
 
       <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!}>
         
@@ -53,7 +55,8 @@ export default function RootLayout({
 
                     {/* Childer, Tooltip & Toaster */}
                     <TooltipProvider>
-                      <main className="flex-1">  
+                      {/* <main className="flex-1 ">   */}
+                      <main className="w-full">  
                         {children}
                       </main>
                     </TooltipProvider>

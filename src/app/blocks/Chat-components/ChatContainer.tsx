@@ -17,7 +17,7 @@ export default function ChatContainer() {
       {/* MESSAGES CONTAINER DISPAYING ALL THE MESSAGES */}
       {/* ORIGINAL DIV */}
       {/* <div className="flex-1 overflow-y-auto min-h-0"> */}
-      <div className="h-[69vh] overflow-y-auto border border-red-600">
+      <div className="h-[67vh] overflow-y-auto border border-red-600">
         <ChatMessages />
       </div>
       

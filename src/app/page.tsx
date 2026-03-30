@@ -43,7 +43,7 @@ export default function Home() {
   }, [selectedUser]);
 
   return (
-    <div className="flex bg-linear-to-r from-gray-100 to-gray-100 w-full">
+    <div className="flex bg-linear-to-r from-gray-100 to-gray-100 w-full border border-red-600 overflow-hidden">
       <SidebarProvider>
         {/* Sidebar */}
     

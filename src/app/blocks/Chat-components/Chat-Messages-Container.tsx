@@ -419,7 +419,7 @@ export default function ChatMessages() {
   }
 
   return (
-    <div className=" p-4 bg-gray-50 w-full">
+    <div className=" p-4 bg-gray-50 h-full w-full">
       {messages.map((msg) => (
         <MessageBubble
           key={msg._id}

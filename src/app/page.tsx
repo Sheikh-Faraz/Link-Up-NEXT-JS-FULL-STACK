@@ -43,11 +43,13 @@ export default function Home() {
   }, [selectedUser]);
 
   return (
-    <div className="flex bg-linear-to-r from-gray-100 to-gray-100 w-full border border-red-600 overflow-hidden">
+    // <div className="flex bg-linear-to-r from-gray-100 to-gray-100 w-full border border-red-600 overflow-hidden items-center justify-center">
+    <div className="flex bg-linear-to-r from-gray-100 to-gray-100 w-full overflow-hidden items-center justify-center">
       <SidebarProvider>
         {/* Sidebar */}
     
-        <div className={`w-full my-4 lg:w-fit ${isChatOpen ? "hidden lg:block" : "block"}`}>
+        {/* <div className={`w-full my-4 bg-red-600 lg:w-fit ${isChatOpen ? "hidden lg:block" : "block"}`}> */}
+        <div className={`w-full lg:w-fit my-0 lg:my-4 ${isChatOpen ? "hidden lg:block" : "block"}`}>
           <AppSidebar />
         </div>
 

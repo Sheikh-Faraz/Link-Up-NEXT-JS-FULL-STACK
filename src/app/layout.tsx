@@ -31,7 +31,7 @@ export default function RootLayout({
     <html lang="en">
       {/* <body className="flex"> */}
       {/* <body className="flex flex-col lg:flex-row max-lg:overflow-hidden"> */}
-      <body className="flex flex-col-reverse lg:flex-row max-lg:overflow-hidden"> 
+      <body className="flex flex-col-reverse lg:flex-row overflow-x-hidden"> 
 
       <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!}>
         

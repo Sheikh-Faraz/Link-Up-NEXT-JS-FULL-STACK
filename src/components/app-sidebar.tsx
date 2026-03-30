@@ -80,7 +80,8 @@ export function AppSidebar() {
   return (
     <Sidebar
       collapsible="none"
-      className="py-2 mx-2 lg:mx-8 bg-white flex flex-col lg:w-[24rem] w-full h-full" 
+      // className="py-2 mx-2 lg:mx-8 bg-white flex flex-col lg:w-[24rem] w-full h-full border border-red-600" 
+      className="py-2 mx-0 lg:mx-8 bg-white flex flex-col lg:w-[24rem] w-full overflow-y-auto" 
     >
       <SidebarContent className="flex flex-col h-full">
         <SidebarGroup className="flex flex-col h-full">

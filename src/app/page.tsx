@@ -52,11 +52,14 @@ export default function Home() {
         </div>
 
         {/* Chat Area */}
-        <div className={`my-4 mx-2 flex-1 overflow-hidden ${!isChatOpen ? "hidden md:block" : "block"}`}>
-          <div className="h-full ">
+        {/* ORIGINAL DIV */}
+        {/* <div className={`my-4 mx-2 flex-1 overflow-hidden border border-red-600 ${!isChatOpen ? "hidden md:block" : "block"}`}> */}
+
+        <div className={`my-4 mx-2 w-full ${!isChatOpen ? "hidden md:block" : "block"}`}>
+          {/* <div className="h-full border border-green-600"> */}
             {/* Chat content */}
             {!selectedUser ? <NoChatSelected /> : <ChatContainer />}
-          </div>
+          {/* </div> */}
         </div>
       </SidebarProvider>
     </div>

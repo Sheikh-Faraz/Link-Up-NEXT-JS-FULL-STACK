@@ -241,7 +241,8 @@ function MessageBubble({
     ): (
       <a
         // href={msg.fileUrl}
-        href={`${BASE_URL}${msg.fileUrl}`}
+        // href={`${BASE_URL}${msg.fileUrl}`}
+        href={`${msg.fileUrl}`}
         target="_blank"
         rel="noopener noreferrer"
         className={`flex items-center space-x-2 ${

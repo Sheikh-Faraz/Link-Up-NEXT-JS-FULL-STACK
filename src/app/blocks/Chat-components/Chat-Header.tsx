@@ -61,9 +61,9 @@ export default function ChatHeader() {
           {/* <p className={`text-sm ${onlineUsers.includes(selectedUser?._id || "") ? "text-green-600" : "text-red-600"}`}>
             {onlineUsers.includes(selectedUser?._id || "") ? "Online" : "Offline"}
           </p> */}
-          <p className="text-sm">
+          {/* <p className="text-sm">
             last Seen 2:03 pm
-          </p>
+          </p> */}
         </div>
       </div>
 

@@ -38,11 +38,11 @@ export default function HorizontalSidebarLocked() {
   // }, [pathname, setActive]);
 
 const active =
-  pathname === "/Home"
+  pathname === "/"
     ? 2
-    : pathname === "/Profile"
+    : pathname === "/Profile-page"
     ? 3
-    : pathname === "/Restore-Contacts"
+    : pathname === "/Restore-Contacts-page"
     ? 4
     : 2;
 

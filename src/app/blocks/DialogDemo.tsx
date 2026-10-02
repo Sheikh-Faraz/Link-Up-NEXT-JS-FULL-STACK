@@ -1,0 +1,97 @@
+import { Button } from "@/components/ui/button"
+
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { CirclePlus, LoaderCircle } from "lucide-react"
+import { useState, FormEvent } from "react";
+
+// Context
+import { useUser } from "@/context/user.context";
+
+export function DialogDemo() {
+
+  // Context
+  const { addContact, isUsersLoading } = useUser();
+
+  const [userIdInput, setUserIdInput] = useState("");
+
+const handleAddContact = async (e: FormEvent<HTMLFormElement>) => {
+
+    e.preventDefault();
+
+    if (!userIdInput.trim()) return alert("Please enter a UserId");
+    
+    // Sending to backend/api
+    addContact(userIdInput.trim());
+
+  };
+  return (
+    <Dialog>
+        <DialogTrigger asChild>
+          <Button 
+            variant="outline" 
+            // className="flex items-center border border-gray-300 rounded-md py-2 px-4 font-medium text-sm max-[425px]:text-xs max-[315px]:mt-4"
+            className="flex items-center border border-gray-300 rounded-full py-2 px-4 font-medium text-sm max-[425px]:text-xs max-[315px]:mt-4"
+            >
+            <CirclePlus className="size-4"/>
+              Add Contact
+            </Button>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-106.25">
+
+        <form onSubmit={handleAddContact}>
+          <DialogHeader>
+            <DialogTitle>Add new contact</DialogTitle>
+            <DialogDescription className="pt-1">
+                Enter the UserId of the contact you want to add. 
+                <span className="block pt-1">
+                  Example: SGH-15A-456987
+                </span>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 my-4 ">
+            <div className="grid gap-3">
+              <Label htmlFor="name-1">UserId</Label>
+              <Input
+                id="userId"
+                value={userIdInput}
+                onChange={(e) => setUserIdInput(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <DialogClose asChild>
+              <Button 
+                variant="outline" 
+                type="submit"   
+                className= "bg-green-600 hover:bg-green-700"
+              >
+                {isUsersLoading ? 
+                  <LoaderCircle className="animate-spin size-5 max-[320px]:size-4 text-white"/> 
+                    : 
+                  <span className="text-white">
+                    Add
+                  </span>
+                }
+              </Button>
+            </DialogClose>
+          </DialogFooter>
+      </form>
+        </DialogContent>
+    </Dialog>
+  )
+}

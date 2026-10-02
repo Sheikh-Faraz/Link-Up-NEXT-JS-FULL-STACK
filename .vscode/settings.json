@@ -1,0 +1,13 @@
+{
+  "path-intellisense.mappings": {
+    "@": "${workspaceFolder}/src",
+    "@components": "${workspaceFolder}/src/components",
+    "@lib": "${workspaceFolder}/src/lib",
+    "@models": "${workspaceFolder}/src/models",
+    "@pages": "${workspaceFolder}/src/pages",
+    "@styles": "${workspaceFolder}/src/styles"
+  },
+  "path-intellisense.extensionOnImport": true,
+  "path-intellisense.showHiddenFiles": true,
+  "path-intellisense.autoSlashAfterDirectory": true
+}

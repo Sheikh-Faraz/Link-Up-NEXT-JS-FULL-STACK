@@ -11,11 +11,18 @@ import { useUI } from "@/context/ui.context";
 // Skeletons
 import MessageSkeleton from "../Skeletons/MessageSkeleton";
 
+// For Notifications
+import toast from "react-hot-toast";
+
 // UI Components
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Bubble, BubbleContent, BubbleReactions } from "@/components/ui/bubble";
+import { 
+  Bubble, 
+  BubbleContent, 
+  // BubbleReactions,
+} from "@/components/ui/bubble";
 
 // Icons
 import { 
@@ -25,9 +32,25 @@ import {
   MessageSquareText, 
   CornerUpLeft, 
   Copy, 
-  // CheckCheck, 
+  // Paperclip,
+  Play,
+  Volume2,
+  Download,
+  ChevronLeft,
+  ChevronRight,
+  FileText,
+  X,
+
+  Check,
+  CheckCheck,
+  // Image as ImageIcon,
+  // Video,
+  // Music,
 } from "lucide-react";
 
+
+// For Audio
+import AudioMessage from "@/app/blocks/AudioMessage";
 
 
 // This is the dropdown the opens for functions like (Reply, Copy, Edit, Delete) based wheather the message is own or not
@@ -95,15 +118,17 @@ function MessageDropdown({
                 Reply
             </DropdownMenuItem>
 
-            {/* If the message is audio then don't allow to copy */}
-            {msg.fileType !== "audio" && (
+            {/* If the message isn't text then don't allow to copy */}
+            {msg.text && (
               <DropdownMenuItem
                 className="cursor-pointer focus:bg-muted"
                 onClick={handleCopy}
               >
-                <Copy className="h-4 w-4 mr-2" /> Copy
+                <Copy className="h-4 w-4 mr-2" />
+                Copy
               </DropdownMenuItem>
             )}
+
 
             {/* Allow to edit the message if it is text and own, also opens edit dialog*/}
             {isOwn && msg.text && (
@@ -164,34 +189,921 @@ function ImageWithPreview(
 }
 
 
+// If more than a certain amount of images are send then this allows the user to view them cororsuel for better ux
+function MediaCarousel({
+  attachments,
+  initialIndex = 0,
+  onClose,
+}: {
+  attachments: {
+    fileName: string;
+    fileUrl: string;
+    fileType?: string;
+    fileSize?: number;
+  }[];
+  initialIndex?: number;
+  onClose: () => void;
+}) {
+  const [currentIndex, setCurrentIndex] = useState(initialIndex);
+
+  const current = attachments[currentIndex];
+
+  const goPrevious = () => {
+    setCurrentIndex((prev) =>
+      prev === 0 ? attachments.length - 1 : prev - 1
+    );
+  };
+
+  const goNext = () => {
+    setCurrentIndex((prev) =>
+      prev === attachments.length - 1 ? 0 : prev + 1
+    );
+  };
+
+  // -----------------------------
+  // Download Image
+  // -----------------------------
+  const handleDownload = () => {
+    try {
+      // Only modify Cloudinary image URLs.
+      // Video URLs are completely untouched.
+      const downloadUrl = current.fileUrl.replace(
+        "/upload/",
+        "/upload/fl_attachment/"
+      );
+
+      const link = window.document.createElement("a");
+
+      link.href = downloadUrl;
+      link.download = current.fileName || "image";
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+
+      window.document.body.appendChild(link);
+      link.click();
+      window.document.body.removeChild(link);
+    } catch (error) {
+      console.error("Image download failed:", error);
+    }
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+
+      if (e.key === "ArrowLeft") {
+        goPrevious();
+      }
+
+      if (e.key === "ArrowRight") {
+        goNext();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-100 flex items-center justify-center bg-black/90"
+      onClick={onClose}
+    >
+      {/* -------------------------------- */}
+      {/* Close */}
+      {/* -------------------------------- */}
+
+      <button
+        type="button"
+        onClick={onClose}
+        className="
+          absolute
+          right-5
+          top-5
+          z-20
+          flex
+          size-9
+          items-center
+          justify-center
+          rounded-full
+          bg-black/50
+          text-white
+          transition
+          hover:bg-black/70
+        "
+        aria-label="Close"
+      >
+        <X className="size-5" />
+      </button>
+
+      {/* -------------------------------- */}
+      {/* Download - IMAGE ONLY */}
+      {/* -------------------------------- */}
+
+      {current.fileType?.startsWith("image/") && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleDownload();
+          }}
+          className="
+            absolute
+            right-16
+            top-5
+            z-20
+            size-9
+            rounded-full
+            bg-black/50
+            text-white
+            transition
+            hover:bg-black/70
+            hover:text-white
+            active:scale-95
+          "
+          aria-label="Download image"
+          title="Download image"
+        >
+          <Download className="size-5" />
+        </Button>
+      )}
+
+      {/* -------------------------------- */}
+      {/* Previous */}
+      {/* -------------------------------- */}
+
+      {attachments.length > 1 && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            goPrevious();
+          }}
+          className="
+            absolute
+            left-4
+            z-20
+            flex
+            size-10
+            items-center
+            justify-center
+            rounded-full
+            bg-black/50
+            text-white
+            transition
+            hover:bg-black/70
+            md:left-8
+          "
+          aria-label="Previous"
+        >
+          <ChevronLeft className="size-7" />
+        </button>
+      )}
+
+      {/* -------------------------------- */}
+      {/* Content */}
+      {/* -------------------------------- */}
+
+      <div
+        className="
+          flex
+          max-h-[90vh]
+          max-w-[90vw]
+          items-center
+          justify-center
+        "
+        onClick={(e) => e.stopPropagation()}
+      >
+        {current.fileType?.startsWith("image/") ? (
+          <img
+            src={current.fileUrl}
+            alt={current.fileName}
+            className="
+              max-h-[85vh]
+              max-w-[90vw]
+              rounded-md
+              object-contain
+            "
+          />
+        ) : current.fileType?.startsWith("video/") ? (
+          <video
+            key={current.fileUrl}
+            src={current.fileUrl}
+            controls
+            autoPlay
+            className="
+              max-h-[85vh]
+              max-w-[90vw]
+              rounded-md
+            "
+          />
+        ) : null}
+      </div>
+
+      {/* -------------------------------- */}
+      {/* Next */}
+      {/* -------------------------------- */}
+
+      {attachments.length > 1 && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            goNext();
+          }}
+          className="
+            absolute
+            right-4
+            z-20
+            flex
+            size-10
+            items-center
+            justify-center
+            rounded-full
+            bg-black/50
+            text-white
+            transition
+            hover:bg-black/70
+            md:right-8
+          "
+          aria-label="Next"
+        >
+          <ChevronRight className="size-7" />
+        </button>
+      )}
+
+      {/* -------------------------------- */}
+      {/* Counter */}
+      {/* -------------------------------- */}
+
+      {attachments.length > 1 && (
+        <div
+          className="
+            absolute
+            bottom-5
+            left-1/2
+            -translate-x-1/2
+            rounded-full
+            bg-black/60
+            px-3
+            py-1.5
+            text-sm
+            text-white
+          "
+        >
+          {currentIndex + 1} / {attachments.length}
+        </div>
+      )}
+    </div>
+  );
+}
+// function MediaCarousel({
+//   attachments,
+//   initialIndex = 0,
+//   onClose,
+// }: {
+//   attachments: {
+//     fileName: string;
+//     fileUrl: string;
+//     fileType?: string;
+//     fileSize?: number;
+//   }[];
+//   initialIndex?: number;
+//   onClose: () => void;
+// }) {
+//   const [currentIndex, setCurrentIndex] = useState(initialIndex);
+
+//   const current = attachments[currentIndex];
+
+//   const goPrevious = () => {
+//     setCurrentIndex((prev) =>
+//       prev === 0 ? attachments.length - 1 : prev - 1
+//     );
+//   };
+
+//   const goNext = () => {
+//     setCurrentIndex((prev) =>
+//       prev === attachments.length - 1 ? 0 : prev + 1
+//     );
+//   };
+
+//   useEffect(() => {
+//     const handleKeyDown = (e: KeyboardEvent) => {
+//       if (e.key === "Escape") {
+//         onClose();
+//       }
+
+//       if (e.key === "ArrowLeft") {
+//         goPrevious();
+//       }
+
+//       if (e.key === "ArrowRight") {
+//         goNext();
+//       }
+//     };
+
+//     document.addEventListener("keydown", handleKeyDown);
+
+//     return () => {
+//       document.removeEventListener("keydown", handleKeyDown);
+//     };
+//   }, [onClose]);
+
+//   return (
+//     <div
+//       className="fixed inset-0 z-100 bg-black/90 flex items-center justify-center"
+//       onClick={onClose}
+//     >
+//       {/* Close */}
+//       <button
+//         onClick={onClose}
+//         className="absolute top-5 right-5 z-20 p-2 rounded-full bg-black/50 text-white hover:bg-black/70"
+//       >
+//         <X className="size-6" />
+//       </button>
+
+//       {/* Previous */}
+//       {attachments.length > 1 && (
+//         <button
+//           onClick={(e) => {
+//             e.stopPropagation();
+//             goPrevious();
+//           }}
+//           className="absolute left-4 md:left-8 z-20 p-2 rounded-full bg-black/50 text-white hover:bg-black/70"
+//         >
+//           <ChevronLeft className="size-7" />
+//         </button>
+//       )}
+
+//       {/* Content */}
+//       <div
+//         className="max-w-[90vw] max-h-[90vh] flex items-center justify-center"
+//         onClick={(e) => e.stopPropagation()}
+//       >
+//         {current.fileType?.startsWith("image/") ? (
+//           <img
+//             src={current.fileUrl}
+//             alt={current.fileName}
+//             className="max-w-[90vw] max-h-[85vh] object-contain rounded-md"
+//           />
+//         ) : current.fileType?.startsWith("video/") ? (
+//           <video
+//             key={current.fileUrl}
+//             src={current.fileUrl}
+//             controls
+//             autoPlay
+//             className="max-w-[90vw] max-h-[85vh] rounded-md"
+//           />
+//         ) : null}
+//       </div>
+
+//       {/* Next */}
+//       {attachments.length > 1 && (
+//         <button
+//           onClick={(e) => {
+//             e.stopPropagation();
+//             goNext();
+//           }}
+//           className="absolute right-4 md:right-8 z-20 p-2 rounded-full bg-black/50 text-white hover:bg-black/70"
+//         >
+//           <ChevronRight className="size-7" />
+//         </button>
+//       )}
+
+//       {/* Counter */}
+//       {attachments.length > 1 && (
+//         <div className="absolute bottom-5 left-1/2 -translate-x-1/2 bg-black/60 text-white text-sm px-3 py-1.5 rounded-full">
+//           {currentIndex + 1} / {attachments.length}
+//         </div>
+//       )}
+//     </div>
+//   );
+// }
+
+
+// This shows gird or corosuel based on the amount of images/videos send
+function MediaGrid({
+  attachments,
+  isOwn,
+  type,
+}: {
+  attachments: {
+    fileName: string;
+    fileUrl: string;
+    fileType?: string;
+    fileSize?: number;
+  }[];
+  isOwn?: boolean;
+  type: "image" | "video";
+}) {
+  const [carouselOpen, setCarouselOpen] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+
+  const visibleAttachments = attachments.slice(0, 4);
+  const remaining = attachments.length - visibleAttachments.length;
+
+  const openCarousel = (index: number) => {
+    setSelectedIndex(index);
+    setCarouselOpen(true);
+  };
+
+  return (
+    <>
+      <div
+        className={`grid gap-1 mb-2 ${
+          attachments.length === 1
+            ? "grid-cols-1"
+            : attachments.length === 2
+              ? "grid-cols-2"
+              : "grid-cols-2"
+        } max-w-[320px]`}
+      >
+        {visibleAttachments.map((attachment, index) => {
+          const isLastVisible =
+            index === visibleAttachments.length - 1;
+
+          const showRemaining = isLastVisible && remaining > 0;
+
+          return (
+            <button
+              key={`${attachment.fileUrl}-${index}`}
+              type="button"
+              onClick={() => openCarousel(index)}
+              className={`
+                relative overflow-hidden rounded-md
+                ${attachments.length === 1 ? "aspect-auto" : "aspect-square"}
+                bg-muted
+              `}
+            >
+              {type === "image" ? (
+                <img
+                  src={attachment.fileUrl}
+                  alt={attachment.fileName}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <video
+                  src={attachment.fileUrl}
+                  muted
+                  preload="metadata"
+                  className="w-full h-full object-cover"
+                />
+              )}
+
+              {/* +N overlay */}
+              {showRemaining && (
+                <div className="absolute inset-0 bg-black/55 flex items-center justify-center">
+                  <span className="text-white text-2xl font-semibold">
+                    +{remaining}
+                  </span>
+                </div>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {carouselOpen && (
+        <MediaCarousel
+          attachments={attachments}
+          initialIndex={selectedIndex}
+          onClose={() => setCarouselOpen(false)}
+        />
+      )}
+    </>
+  );
+}
+
+
+// If a single file is send
+function AttachmentPreview({
+  attachment,
+  isOwn,
+}: {
+  attachment: {
+    fileName: string;
+    fileUrl: string;
+    fileType?: string;
+    fileSize?: number;
+  };
+  isOwn?: boolean;
+}) {
+  const fileType = attachment.fileType || "";
+
+  // IMAGE
+  if (fileType.startsWith("image/")) {
+    return (
+      <MediaGrid
+        attachments={[attachment]}
+        isOwn={isOwn}
+        type="image"
+      />
+    );
+  }
+
+  // VIDEO
+  if (fileType.startsWith("video/")) {
+    return (
+      <MediaGrid
+        attachments={[attachment]}
+        isOwn={isOwn}
+        type="video"
+      />
+    );
+  }
+
+  // AUDIO
+  if (fileType.startsWith("audio/")) {
+    return (
+      <div className="mb-2 max-w-full">
+        <AudioMessage
+          src={attachment.fileUrl}
+        />
+      </div>
+      // <div className="mb-2 max-w-full bg-green-600">
+      //   <audio
+      //     controls
+      //     src={attachment.fileUrl}
+      //     className="max-w-full bg-red-600"
+      //   />
+      // </div>
+    );
+  }
+
+  // For downloading document/file
+          const handleDownload = () => {
+              try {
+                // Tell Cloudinary to download the file
+                const downloadUrl = attachment.fileUrl.replace(
+                  "/upload/",
+                  "/upload/fl_attachment/"
+                );
+
+                const link = window.document.createElement("a");
+
+                link.href = downloadUrl;
+                link.download = attachment.fileName || "document";
+                link.target = "_blank";
+                link.rel = "noopener noreferrer";
+
+                window.document.body.appendChild(link);
+                link.click();
+                window.document.body.removeChild(link);
+              } catch (error) {
+                console.error("Document download failed:", error);
+              }
+            };
+
+  // DOCUMENT
+  return (
+    // <a
+    //   href={attachment.fileUrl}
+    //   target="_blank"
+    //   rel="noopener noreferrer"
+    //   className={`flex items-center gap-3 rounded-md px-3 py-2 mb-2 text-sm hover:opacity-90 transition`}
+    // >
+    //   <FileText className="size-5 shrink-0" />
+
+    //   <div className="min-w-0 flex-1">
+    //     <p className="truncate font-medium">
+    //       {attachment.fileName || "Document"}
+    //     </p>
+
+    //     {attachment.fileSize && (
+    //       <p className="text-xs opacity-70">
+    //         {(attachment.fileSize / (1024 * 1024)).toFixed(1)} MB
+    //       </p>
+    //     )}
+    //   </div>
+    // </a>
+
+              <div
+                className="
+                  flex
+                  items-center
+                  gap-3
+                  rounded-lg
+                  px-3
+                  py-2.5
+                  transition-colors
+                "
+              >
+                {/* File Icon */}
+                <div
+                  className="
+                    flex
+                    size-10
+                    shrink-0
+                    items-center
+                    justify-center
+                    rounded-lg
+                    bg-muted
+                  "
+                >
+                  <FileText className="size-5 text-muted-foreground" />
+                </div>
+
+                {/* File Information */}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">
+                    {attachment.fileName || "Document"}
+                  </p>
+
+                  {attachment.fileSize && (
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {(attachment.fileSize / (1024 * 1024)).toFixed(1)} MB
+                    </p>
+                  )}
+                </div>
+
+                {/* Download */}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleDownload}
+                  aria-label="Download document"
+                  title="Download"
+                  className="
+                    size-8
+                    shrink-0
+                    rounded-full
+                    text-muted-foreground
+                    transition-all
+                    duration-200
+                    hover:bg-muted
+                    hover:text-foreground
+                    active:scale-95
+                  "
+                >
+                  <Download className="size-4" />
+                </Button>
+              </div>
+  );
+}
+
+
+// If a certain amount of files is send
+function AttachmentsPreview({
+  attachments,
+  isOwn,
+}: {
+  attachments: {
+    fileName: string;
+    fileUrl: string;
+    fileType?: string;
+    fileSize?: number;
+  }[];
+  isOwn?: boolean;
+}) {
+  if (!attachments.length) return null;
+
+  const images = attachments.filter((file) =>
+    file.fileType?.startsWith("image/")
+  );
+
+  const videos = attachments.filter((file) =>
+    file.fileType?.startsWith("video/")
+  );
+
+  const audios = attachments.filter((file) =>
+    file.fileType?.startsWith("audio/")
+  );
+
+  const documents = attachments.filter(
+    (file) =>
+      !file.fileType?.startsWith("image/") &&
+      !file.fileType?.startsWith("video/") &&
+      !file.fileType?.startsWith("audio/")
+  );
+
+  return (
+    <div className="space-y-2">
+
+      {/* IMAGES */}
+      {images.length > 0 && (
+        <MediaGrid
+          attachments={images}
+          isOwn={isOwn}
+          type="image"
+        />
+      )}
+
+      {/* VIDEOS */}
+      {videos.length > 0 && (
+        <MediaGrid
+          attachments={videos}
+          isOwn={isOwn}
+          type="video"
+        />
+      )}
+
+      {/* AUDIO */}
+      {audios.length > 0 && (
+        <div className="space-y-8">
+          {audios.map((audio, index) => (
+            <div
+              key={`${audio.fileUrl}-${index}`}
+              className="my-6"
+            >
+              <AudioMessage
+                src={audio.fileUrl}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+
+
+
+      {/* DOCUMENTS */}
+      {documents.length > 0 && (
+        <div className="space-y-2">
+          {documents.map((document, index) => {
+            const handleDownload = () => {
+              try {
+                // Tell Cloudinary to download the file
+                const downloadUrl = document.fileUrl.replace(
+                  "/upload/",
+                  "/upload/fl_attachment/"
+                );
+
+                const link = window.document.createElement("a");
+
+                link.href = downloadUrl;
+                link.download = document.fileName || "document";
+                link.target = "_blank";
+                link.rel = "noopener noreferrer";
+
+                window.document.body.appendChild(link);
+                link.click();
+                window.document.body.removeChild(link);
+              } catch (error) {
+                console.error("Document download failed:", error);
+              }
+            };
+
+            return (
+              <div
+                key={`${document.fileUrl}-${index}`}
+                className="
+                  flex
+                  items-center
+                  gap-3
+                  rounded-lg
+                  px-3
+                  py-2.5
+                  transition-colors
+                "
+              >
+                {/* File Icon */}
+                <div
+                  className="
+                    flex
+                    size-10
+                    shrink-0
+                    items-center
+                    justify-center
+                    rounded-lg
+                    bg-muted
+                  "
+                >
+                  <FileText className="size-5 text-muted-foreground" />
+                </div>
+
+                {/* File Information */}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">
+                    {document.fileName || "Document"}
+                  </p>
+
+                  {document.fileSize && (
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {(document.fileSize / (1024 * 1024)).toFixed(1)} MB
+                    </p>
+                  )}
+                </div>
+
+                {/* Download */}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleDownload}
+                  aria-label="Download document"
+                  title="Download"
+                  className="
+                    size-8
+                    shrink-0
+                    rounded-full
+                    text-muted-foreground
+                    transition-all
+                    duration-200
+                    hover:bg-muted
+                    hover:text-foreground
+                    active:scale-95
+                  "
+                >
+                  <Download className="size-4" />
+                </Button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      {/* {documents.length > 0 && (
+        <div className="space-y-1">
+          {documents.map((document, index) => (
+            <a
+              key={`${document.fileUrl}-${index}`}
+              href={document.fileUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm hover:opacity-90 transition`}
+            >
+              <FileText className="size-5 shrink-0" />
+
+            <div>
+
+              <div className="min-w-0 flex-1 flex gap-2">
+                <p className="truncate font-medium">
+                  {document.fileName || "Document"}
+                </p>
+
+                {document.fileSize && (
+                  <p className="text-xs opacity-70">
+                    ( {(document.fileSize / (1024 * 1024)).toFixed(1)} MB )
+                  </p>
+                )}
+              </div>
+
+              <div className="flex gap-4">
+                <button className="bg-white text-black dark:bg-black dark:text-white p-1 rounded-full">Download</button>
+                <button className="bg-white p-1 rounded-full">Preview</button>
+              </div>
+
+            </div>
+
+            </a>
+          ))}
+        </div>
+      )} */}
+
+    </div>
+  );
+}
+
+
 // This is for single individual message bubble
 function MessageBubble({
-  // children,
   id,
   time,
   isOwn,
   replyTo,
   msg,
   isEdited = false,
+
   // isText = true,
-  // seenby,
 }: {
-  // children: React.ReactNode;
   id: string;
   time: string;
   isOwn?: boolean;
   isText?: boolean;
   isEdited?: boolean;
   seenby?: string[];
+
   msg: {
     text?: string;
+
+    // New
+    attachments?: {
+      fileName: string;
+      fileUrl: string;
+      fileType?: string;
+      filePublicId?: string;
+      fileResourceType?: string;
+      fileSize?: number;
+    }[];
+
+    // Old -- Keeping this for old messages
     fileUrl?: string;
     fileType?: string;
     fileName?: string;
     filePublicId?: string;
     fileResourceType?: string;
+
+    seenBy?: string[];
   };
-  replyTo?: string | null;
+
+   replyTo?: string | null;
+
 }) {
 
     // Contexts
@@ -207,6 +1119,7 @@ function MessageBubble({
     // To copy text to clipboard handler
     const handleCopy = async () => {
       await navigator.clipboard.writeText(String(msg.text || ""));
+      toast.success("Message copied to clipboard");
     };
 
     // To make edit/update message handler
@@ -220,6 +1133,12 @@ function MessageBubble({
       await deleteMessage(id, selectedUser?._id || "" , forEveryone);
       setOpenDelete(false);
     };
+
+
+    // For showing seen 
+    const isSeen = msg.seenBy?.some(
+      (userId) => String(userId) === String(selectedUser?._id)
+    );
 
   return (
     <div className="mb-5"> 
@@ -242,94 +1161,151 @@ function MessageBubble({
 
       
       {/* This is the message box showing the content of the message send */}
-      {/* <div
-        className={`relative rounded-md shadow p-2 transition-all duration-200 ${
-            isOwn ? "bg-[#363434] text-[#E5E5E5] dark:bg-white dark:text-black" : "bg-[#F5F5F5] text-black dark:bg-[#262626] dark:text-white"
-          } ${
-            msg.fileType?.startsWith("image/")
-              ? "max-w-65"
-              : "max-w-sm"
-          }`
-        }
-      > */}
 
       <Bubble {...(!isOwn && { variant: "muted" })}>
 
         <BubbleContent>
-        {/* This is the reply preview showing above image which with it was send with */}
+
+        {/* This is the reply preview showing for the message that was selected to reply to */}
         {Array.isArray(replyTo) && replyTo.length > 0 && (
           <div
-            // ${isOwn ? "border-white/60 bg-[#6FD5AA]" : "border-green-400 bg-gray-100"}
             className={`
-              border-l-4 pl-3 pr-2 py-1 mb-2 rounded-md border-green-400 
-              ${isOwn ? " bg-[#151515] dark:bg-[#e5e5e5]" : "bg-[#e5e5e5] dark:bg-[#151515]"}
-              `}
+              mb-3
+              rounded-md
+              border-l-4
+              border-green-400
+              px-2
+              py-1
+              transition-colors
+              ${isOwn ? "bg-[#6b626247] dark:bg-[#d4d2d2]" : "bg-[#e5e5e5] dark:bg-[#151515]"}
+            `}
           >
-            {replyTo[0].fileUrl && (
-              replyTo[0].fileType?.startsWith("image/") ? (
-                <ImageWithPreview 
-                  src={replyTo[0].fileUrl} 
-                  isReplyToMessagePreview={true}
-                />
-              ) : (
-                <div
-                  className={`flex items-center space-x-2 mb-3 text-xs ${
-                    isOwn ? "text-white" : "text-gray-700"
-                  }`}
-                >
-                  📎 <span>{replyTo[0].fileName || "Document"}</span>
-                </div>
-              )
-            )}
+            {replyTo[0].fileUrl &&
+              replyTo[0].fileType?.startsWith("image/") && (
+                <div className="flex items-center gap-2">
+                  <ImageWithPreview
+                    src={replyTo[0].fileUrl}
+                    isReplyToMessagePreview={true}
+                  />
 
+                  <span className="truncate text-xs text-muted-foreground">
+                    {replyTo[0].fileName || "Image"}
+                  </span>
+                </div>
+              )}
+
+            {replyTo[0].fileUrl &&
+              replyTo[0].fileType?.startsWith("video/") && (
+                <div className="flex items-center gap-2">
+                  <div
+                    className="
+                      flex
+                      size-8
+                      shrink-0
+                      items-center
+                      justify-center
+                      overflow-hidden
+                      rounded-md
+                      bg-black/10
+                      dark:bg-white/10
+                    "
+                  >
+                    <Play className="size-4 text-muted-foreground" />
+                  </div>
+
+                  <span className="truncate text-xs text-muted-foreground">
+                    {replyTo[0].fileName || "Video"}
+                  </span>
+                </div>
+              )}
+
+            {replyTo[0].fileUrl &&
+              replyTo[0].fileType?.startsWith("audio/") && (
+                <div className="flex items-center gap-2">
+                  <div
+                    className="
+                      flex
+                      size-8
+                      shrink-0
+                      items-center
+                      justify-center
+                      rounded-md
+                      bg-black/10
+                      text-muted-foreground
+                      dark:bg-white/10
+                    "
+                  >
+                    <Volume2 className="size-4" />
+                  </div>
+
+                  <span className="truncate text-xs text-muted-foreground">
+                    {replyTo[0].fileName || "Audio"}
+                  </span>
+                </div>
+              )}
+
+            {replyTo[0].fileUrl &&
+              replyTo[0].fileType &&
+              !replyTo[0].fileType.startsWith("image/") &&
+              !replyTo[0].fileType.startsWith("video/") &&
+              !replyTo[0].fileType.startsWith("audio/") && (
+                <div className="flex items-center gap-2">
+                  <div
+                    className="
+                      flex
+                      size-8
+                      shrink-0
+                      items-center
+                      justify-center
+                      rounded-md
+                      bg-black/10
+                      text-muted-foreground
+                      dark:bg-white/10
+                    "
+                  >
+                    <FileText className="size-4" />
+                  </div>
+
+                  <span className="truncate text-xs text-muted-foreground">
+                    {replyTo[0].fileName || "File"}
+                  </span>
+                </div>
+              )}
 
             {replyTo[0].text && (
-              // ${isOwn ? "text-white/90" : "text-gray-700"}`
-              // ${isOwn ? "text-green-600" : "text-red-700"}
-              <p className={`text-xs line-clamp-2`}>
+              <p className="mt-1 line-clamp-2 text-xs">
                 {replyTo[0].text}
               </p>
             )}
-
           </div>
         )}
 
 
         {/* 💬 Actual Message Text / File / This is the message regular sending */}
-        {msg.fileUrl && (
-          <>
-            {msg.fileType?.startsWith("image/") ? (
-              <ImageWithPreview src={msg.fileUrl} />
-            ) : 
-            msg.fileType?.startsWith("audio/") ? (
-              <div className="mb-2">
-                <audio controls src={msg.fileUrl} />
-              </div>
-            ) : (
-              <a
-                href={msg.fileUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`flex items-center space-x-2 ${
-                  isOwn ? "bg-[#4CBBA3]" : "bg-gray-100"
-                } rounded-md px-2 py-1 mb-2 text-sm hover:opacity-90 transition`}
-              >
-                <span>📄 {msg.fileName || "Document"}</span>
-              </a>
-            )}
-          </>
+        {/* Attachments */}
+        {msg.attachments && msg.attachments.length > 0 ? (
+          <AttachmentsPreview                           // For multiple files
+            attachments={msg.attachments}
+            isOwn={isOwn}
+          />
+        ) : (
+          /* Backward compatibility for old messages */
+          msg.fileUrl && (
+            <AttachmentPreview                          // For single file
+              attachment={{
+                fileName: msg.fileName || "Document",
+                fileUrl: msg.fileUrl,
+                fileType: msg.fileType || "",
+                fileSize: undefined,
+              }}
+              isOwn={isOwn}
+            />
+          )
         )}
 
 
         {msg.text && (
-          <p
-            // className={`text-sm transition-all duration-300 m-2 ${
-            className={`text-sm transition-all duration-300 ${
-              msg.text === "🛇 This message was deleted"
-                ? `${isOwn ? "italic text-white opacity-70" : "italic text-black opacity-70"}`
-                : "opacity-100"
-            }`}
-          >
+          <p  className={`text-sm transition-all duration-300`}>
             {msg.text}
             {isEdited && (
               <span className="ml-2 text-xs italic opacity-70">(edited)</span>
@@ -434,54 +1410,72 @@ function MessageBubble({
         </div>
       }
 
-      {isOwn && <div className="text-xs text-gray-500 mr-2 flex justify-end">
+      {isOwn && (
+        <div className="text-xs text-gray-500 mr-2 flex justify-end items-center gap-1">
           <span>{time}</span>
+
+          <span
+            className={isSeen ? "text-[#6FD5AA]" : ""}
+            title={isSeen ? "Seen" : "Sent"}
+          >
+            {isSeen ? <CheckCheck className="text-[#6FD5AA] size-4"  /> : <Check className="size-4" />}
+          </span>
         </div>
-      }
+      )}
+
     </div>
 
   );
 }
 
-export default function ChatMessages() {
 
-  //  Contexts
+
+
+export default function ChatMessages() {
+  
+  // Contexts
   const { authUser } = useAuth();
   const { selectedUser, fetchUser } = useUser();
-  const { messages, getMessages, isMessagesLoading } = useMessages();
+  const { messages, getMessages, isMessagesLoading, markMessagesAsSeen } = useMessages();
+
+  const { replyingTo, cancelReply } = useUI();
 
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
+
   useEffect(() => {
     fetchUser();
-    if (selectedUser) getMessages(selectedUser._id);
-    // The getting messagees of the user indicate that the messages are read by me so update the seen status
 
-    // subscribeToMessages();
+    if (selectedUser) {
+      const loadConversation = async () => {
+        await getMessages(selectedUser._id);
+        await markMessagesAsSeen(selectedUser._id);
+      };
 
-    // return () => {
-    //   unsubscribeFromMessages();
-    // }
-    
+      loadConversation();
+    }
   }, [selectedUser]);
 
+  // useEffect(() => {
+  //   fetchUser();
+  //   if (selectedUser) {
+  //     getMessages(selectedUser._id);
+  //     markMessagesAsSeenApi(selectedUser._id);
+  //   }
+  // }, [selectedUser]);
+
+
+  // Scroll to bottom ONLY when messages change.
+  // Reply selection/cancel will NOT trigger this.
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-
-  // if (!selectedUser) {
-  //   return (
-  //     <div className="flex-1 flex items-center justify-center text-gray-500 bg-gray-50 border border-blue-600">
-  //       Select a user to start chatting 💬
-  //     </div>
-  //   );
-  // }
 
   if (isMessagesLoading) return <MessageSkeleton />;
 
   if (messages.length === 0) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center text-gray-500 bg-gray-50 h-full text-center">
+      <div className="flex h-full flex-1 flex-col items-center justify-center bg-gray-50 text-center text-gray-500">
         <MessageSquareText size={45} />
         <p className="mt-6">No messages yet — say hi 👋</p>
       </div>
@@ -489,20 +1483,203 @@ export default function ChatMessages() {
   }
 
   return (
-    <div className="p-2">
-      {messages.map((msg) => (
-        <MessageBubble
-          key={msg._id}
-          msg={msg}
-          replyTo={msg.replyTo} 
-          id={msg._id}
-          time={new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-          isOwn={String(msg.senderId) === String(authUser?._id)}
-          isEdited={msg.isEdited}
-          seenby={msg.seenBy}
-        />
-      ))}
-      <div ref={bottomRef} />
+    <div className="relative flex h-full min-h-0 flex-col">
+
+      {/* Messages */}
+      <div className="min-h-0 flex-1 overflow-y-auto p-2">
+        {messages.map((msg) => (
+          <MessageBubble
+            key={msg._id}
+            msg={msg}
+            replyTo={msg.replyTo}
+            id={msg._id}
+            time={new Date(msg.createdAt).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+            isOwn={String(msg.senderId) === String(authUser?._id)}
+            isEdited={msg.isEdited}
+            // seenby={msg.seenBy}
+          />
+        ))}
+
+        <div ref={bottomRef} />
+      </div>
+
+      {/* Sticky Reply Preview */}
+      {replyingTo && (
+        <div className="shrink-0 mt-2">
+          <div
+            className="
+              flex
+              items-center
+              gap-3
+              rounded-lg
+              border
+              border-border
+              shadow-xs dark:border-input dark:bg-input/30
+              px-3
+              py-2.5
+            "
+          >
+            {/* Reply indicator */}
+            <div className="h-10 w-1 shrink-0 rounded-full bg-[#6FD5AA]" />
+
+            {/* Preview */}
+            <div className="min-w-0 flex-1">
+              <p className="mb-0.5 text-xs font-medium text-[#6FD5AA]">
+                Replying to
+              </p>
+
+              {/* TEXT */}
+              {replyingTo.text && !replyingTo.fileUrl && (
+                <p className="truncate text-sm text-foreground">
+                  {replyingTo.text}
+                </p>
+              )}
+
+              {/* IMAGE */}
+              {replyingTo.fileUrl &&
+                replyingTo.fileType?.startsWith("image/") && (
+                  <div className="flex items-center gap-2">
+                    <img
+                      src={replyingTo.fileUrl}
+                      alt={replyingTo.fileName || "Image"}
+                      className="
+                        size-10
+                        shrink-0
+                        rounded-md
+                        object-cover
+                      "
+                    />
+
+                    <p className="truncate text-sm text-muted-foreground">
+                      {replyingTo.fileName || "Image"}
+                    </p>
+                  </div>
+                )}
+
+              {/* VIDEO */}
+              {replyingTo.fileUrl &&
+                replyingTo.fileType?.startsWith("video/") && (
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="
+                        flex
+                        size-10
+                        shrink-0
+                        items-center
+                        justify-center
+                        overflow-hidden
+                        rounded-md
+                        bg-muted
+                      "
+                    >
+                      <video
+                        src={replyingTo.fileUrl}
+                        muted
+                        preload="metadata"
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+
+                    <p className="truncate text-sm text-muted-foreground">
+                      {replyingTo.fileName || "Video"}
+                    </p>
+                  </div>
+                )}
+
+              {/* AUDIO */}
+              {replyingTo.fileUrl &&
+                replyingTo.fileType?.startsWith("audio/") && (
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="
+                        flex
+                        size-10
+                        shrink-0
+                        items-center
+                        justify-center
+                        rounded-md
+                        bg-muted
+                        text-muted-foreground
+                      "
+                    >
+                      <Volume2 className="size-5" />
+                    </div>
+
+                    <p className="truncate text-sm text-muted-foreground">
+                      {replyingTo.fileName || "Audio"}
+                    </p>
+                  </div>
+                )}
+
+              {/* DOCUMENT / OTHER FILE */}
+              {replyingTo.fileUrl &&
+                replyingTo.fileType &&
+                !replyingTo.fileType.startsWith("image/") &&
+                !replyingTo.fileType.startsWith("video/") &&
+                !replyingTo.fileType.startsWith("audio/") && (
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="
+                        flex
+                        size-10
+                        shrink-0
+                        items-center
+                        justify-center
+                        rounded-md
+                        bg-muted
+                        text-muted-foreground
+                      "
+                    >
+                      <FileText className="size-5" />
+                    </div>
+
+                    <div className="min-w-0">
+                      <p className="truncate text-sm text-foreground">
+                        {replyingTo.fileName || "File"}
+                      </p>
+
+                      {replyingTo.fileSize && (
+                        <p className="text-xs text-muted-foreground">
+                          {(
+                            replyingTo.fileSize /
+                            (1024 * 1024)
+                          ).toFixed(1)}{" "}
+                          MB
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+            </div>
+
+            {/* Cancel */}
+            <button
+              type="button"
+              onClick={cancelReply}
+              aria-label="Cancel reply"
+              title="Cancel reply"
+              className="
+                flex
+                size-8
+                shrink-0
+                items-center
+                justify-center
+                rounded-full
+                text-muted-foreground
+                transition-all
+                hover:bg-muted
+                hover:text-foreground
+                active:scale-95
+              "
+            >
+              <X className="size-4" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

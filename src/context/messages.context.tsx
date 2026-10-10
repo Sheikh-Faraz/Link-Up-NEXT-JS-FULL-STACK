@@ -5,27 +5,28 @@ import { createContext, useContext, useState } from "react";
 
 // For realtime functionality
 import Pusher from "pusher-js";
-import { useEffect } from "react";
-import { useUser } from "./user.context"; // 👈 IMPORTANT (you need selectedUser)
+import { useEffect, useRef } from "react";
+import { useUser } from "./user.context"; // 👈 IMPORTANT (selectedUser)
 
 // APIs
 import { 
   clearChatApi, 
   deleteMessageApi, 
   editMessageApi, 
-  forwardMessageApi, 
   getMessagesApi, 
-  markAsSeenApi, 
+  sendMessageApi,
+  
+  
+  markMessagesAsSeenApi, 
+  forwardMessageApi, 
   reactToMessageApi, 
-  sendMessageApi 
-
 } from "@/services/message.service";
 
 // Interface for User type (you can expand this in user.types.ts)
 import type { ReplyToMessage, Message } from "@/types/message.type";
 
 // Utility to extract error messages
-import { getErrorMessage } from "@/lib/error";
+import { getErrorMessage, } from "@/lib/error";
 
 // authUser from Auth Context
 import { useAuth } from "./auth.context";
@@ -34,18 +35,22 @@ import { useAuth } from "./auth.context";
 interface messageContextType {
     messages: Message[];
     isMessagesLoading: boolean;
-
     getMessages: (userId: string) => Promise<void>;
-    sendMessage: (receiverId: string, text: string, replyTo?: ReplyToMessage, file?: File, fileName?: string) => Promise<void>;
+    sendMessage: (
+      receiverId: string,
+      text: string,
+      replyTo?: ReplyToMessage,
+      files?: File[],
+    ) => Promise<void>;
+
     editMessage: (messageId: string, newText: string, receiverId: string) => Promise<void>;
     forwardMessage: (messageId: string, receiverId: string) => Promise<void>;
     deleteMessage: (messageId: string, receiverId: string, forEveryone?: boolean) => Promise<void>;
     reactToMessage: (messageId: string, emoji: string) => Promise<void>;
-    markAsSeen: (receiverId: string) => Promise<void>;
     clearChat: (userId: string) => Promise<void>;
-
-    // cancelReply: () => void;
-
+    
+    markMessagesAsSeen: (userId: string) => Promise<void>;
+    // markAsSeen: (receiverId: string) => Promise<void>;
 }
     
 const messageContext = createContext<messageContextType | undefined>(undefined);    
@@ -59,43 +64,167 @@ export const MessageProvider = ({ children }: { children: React.ReactNode }) => 
   const { authUser } = useAuth();
   
   // Importing selectedUser from User Context for realtime feature
-  const { selectedUser } = useUser();
+  const { 
+    selectedUser, 
+    users, 
+
+    updateUserLastMessage, 
+    updateSidebarAfterDelete, 
+    updateSidebarLastMessageSeen, 
+
+  } = useUser();
+  
+  
+  const selectedUserRef = useRef(selectedUser);
+
+  useEffect(() => {
+    selectedUserRef.current = selectedUser;
+  }, [selectedUser]);
 
 
   // FOR PUSHER AND REALTIME MESSAGES
   useEffect(() => {
-  if (!authUser || !selectedUser) return;
+  if (!authUser || users.length === 0) return;
 
   const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
     cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
   });
 
-  // 🔥 SAME LOGIC AS BACKEND
-  const chatId =
-    authUser._id < selectedUser._id
-      ? `${authUser._id}-${selectedUser._id}`
-      : `${selectedUser._id}-${authUser._id}`;
+  const channels: Pusher.Channel[] = [];
 
-  const channel = pusher.subscribe(`chat-${chatId}`);
+  users.forEach((user) => {
+    const chatId =
+      authUser._id < user._id
+        ? `${authUser._id}-${user._id}`
+        : `${user._id}-${authUser._id}`;
 
-  channel.bind("new-message", (newMessage: Message) => {
-    // console.log("PUSHER RECEIVED:", newMessage); // ✅ debug
+    const channel = pusher.subscribe(`chat-${chatId}`);
 
-    setMessages((prev) => {
-      // ❗ prevent duplicates
-      if (prev.some((msg) => msg._id === newMessage._id)) return prev;
+    channels.push(channel);
 
-      return [...prev, newMessage];
+    channel.bind("new-message", (newMessage: Message) => {
+      // ==========================================================
+      // UPDATE SIDEBAR
+      // ==========================================================
+
+      const otherUserId =
+        newMessage.senderId === authUser._id
+          ? newMessage.receiverId
+          : newMessage.senderId;
+
+      updateUserLastMessage(otherUserId, {
+        _id: newMessage._id,
+        senderId: newMessage.senderId,
+        receiverId: newMessage.receiverId,
+        text: newMessage.text,
+        fileType: newMessage.fileType,
+        attachments: newMessage.attachments?.map((attachment) => ({
+          fileName: attachment.fileName,
+          fileType: attachment.fileType,
+        })),
+        createdAt: newMessage.createdAt,
+        seenBy: newMessage.seenBy?.map(String) ?? [],
+      });
+
+      // ==========================================================
+      // UPDATE CURRENT CHAT
+      // ==========================================================
+
+      const currentSelectedUser = selectedUserRef.current;
+
+      const isIncomingMessage =
+        String(newMessage.receiverId) === String(authUser._id);
+
+      const isCurrentConversationOpen =
+        String(currentSelectedUser?._id) === String(newMessage.senderId);
+
+      if (isIncomingMessage && isCurrentConversationOpen) {
+        void markMessagesAsSeen(newMessage.senderId);
+      }
+
+
+      if (
+        currentSelectedUser?._id === newMessage.senderId ||
+        currentSelectedUser?._id === newMessage.receiverId
+      ) {
+        setMessages((prev) => {
+          if (prev.some((msg) => msg._id === newMessage._id)) {
+            return prev;
+          }
+
+          return [...prev, newMessage];
+        });
+      }
     });
+
+
+    // Pusher bind for realtime message read
+    channel.bind(
+      "messages-seen",
+      (data: {
+        readerId: string;
+        messageSenderId: string;
+      }) => {
+        // Only the original sender needs to update their sent messages.
+        if (String(authUser._id) !== data.messageSenderId) {
+          return;
+        }
+
+        setMessages((prevMessages) =>
+          prevMessages.map((msg) => {
+            // Update only messages sent by the current user
+            // to the person who just read them.
+            const isMessageFromMe =
+              String(msg.senderId) === String(authUser._id);
+
+            const isMessageToReader =
+              String(msg.receiverId) === data.readerId;
+
+            if (!isMessageFromMe || !isMessageToReader) {
+              return msg;
+            }
+
+            return {
+              ...msg,
+              seenBy: Array.from(
+                new Set([
+                  ...(msg.seenBy || []).map(String),
+                  data.readerId,
+                ])
+              ),
+            };
+          })
+        );
+      }
+    );
+
+
+    // Pusher bind for realtime message read to update sidebar
+    channel.bind(
+      "messages-seen",
+      (data: { readerId: string; messageSenderId: string }) => {
+        // This sidebar update is relevant to the sender's browser.
+        if (String(authUser?._id) !== String(data.messageSenderId)) return;
+
+        // Update the contact's latest-message receipt in the sidebar.
+        updateSidebarLastMessageSeen(
+          data.readerId,
+          data.messageSenderId
+        );
+      }
+    );
+
   });
 
   return () => {
-    channel.unbind_all();
-    channel.unsubscribe();
+    channels.forEach((channel) => {
+      channel.unbind_all();
+      channel.unsubscribe();
+    });
+
+    pusher.disconnect();
   };
-}, [selectedUser, authUser]);
-
-
+}, [authUser, users]);
 
 
 
@@ -103,11 +232,9 @@ export const MessageProvider = ({ children }: { children: React.ReactNode }) => 
     const getMessages = async (receiverId: string) => {
         
     try {
+
         setIsMessagesLoading(true);
         const res = await getMessagesApi(receiverId);
-
-        console.log("This is response: ", res);
-    
         setMessages(res.data);  
 
     } catch (err) {
@@ -120,49 +247,52 @@ export const MessageProvider = ({ children }: { children: React.ReactNode }) => 
 
 
 // For Sending Messages
-const sendMessage = async ( 
-  receiverId: string, 
-  text: string, 
-  replyTo?: ReplyToMessage, 
-  file?: File, 
-  fileName?: string
+const sendMessage = async (
+  receiverId: string,
+  text: string,
+  replyTo?: ReplyToMessage,
+  files?: File[]
 ) => {
-  
-  if (!text.trim() && !file) return;
+  if (!text.trim() && (!files || files.length === 0)) return;
 
   try {
-    const formData = new FormData();
+    let attachments: any = [];
 
-    formData.append("receiverId", receiverId);
-    formData.append("text", text);
-    formData.append("fileName", fileName || "");
+    if (files && files.length > 0) {
+      const { uploadToCloudinary } = await import(
+        "@/lib/upload-to-cloudinary"
+      );
 
-    if (replyTo) {
-      formData.append("replyTo", JSON.stringify(replyTo));
+      attachments = await Promise.all(
+        files.map((file) => uploadToCloudinary(file))
+      );
     }
 
-    if (file) {
-      formData.append("file", file);
-    }
+    const payload = {
+      receiverId,
+      text,
+      replyTo,
+      attachments,
+    };
 
-    // read the sent message from the Axios response data and add it to the messages state
-    const { data } = await sendMessageApi(formData);
-    const newMessage = data.sendedMessage; // Adjust this based on your actual response structure
+    const { data } = await sendMessageApi(payload);
 
-    // setMessages((prev) => [...prev, newMessage]);
-    // Update the code so no duplicate issue occur with pusher for realtime message sending 
+    const newMessage = data.sendedMessage;
+
     setMessages((prev) => {
-     // prevent duplicates
-      if (prev.some((m) => m._id === newMessage._id)) return prev;
-    return [...prev, newMessage];
+      if (prev.some((m) => m._id === newMessage._id)) {
+        return prev;
+      }
+
+      return [...prev, newMessage];
     });
 
+
+    // Move the user messaged to the top of the list
+    updateUserLastMessage(receiverId, newMessage);
+
   } catch (err) {
-        toast.error(
-          getErrorMessage(err, "Failed to send message")
-        );
-        
-    return null;
+      toast.error(getErrorMessage(err, "Failed to send message"));
   }
 };
 
@@ -182,42 +312,198 @@ const editMessage = async (messageId: string, newText: string, receiverId: strin
 
       toast.success("Message edited");
 
+
     } catch (err) {
-        toast.error(getErrorMessage(err, "Failed to edit message"));
-        
+        toast.error(getErrorMessage(err, "Failed to edit message"));        
     }
   };
+
+
+  // For marking messages as seen
+  const markMessagesAsSeen = async (userId: string) => {
+    if (!authUser?._id || !userId) return;
+
+    try {
+      await markMessagesAsSeenApi(userId);
+
+      // Update local messages after the API succeeds.
+      setMessages((prevMessages) =>
+        prevMessages.map((msg) => {
+          const isFromSelectedUser =
+            String(msg.senderId) === String(userId);
+
+          const isToCurrentUser =
+            String(msg.receiverId) === String(authUser._id);
+
+          if (!isFromSelectedUser || !isToCurrentUser) {
+            return msg;
+          }
+
+          return {
+            ...msg,
+            seenBy: Array.from(
+              new Set([
+                ...(msg.seenBy ?? []).map(String),
+                String(authUser._id),
+              ])
+            ),
+          };
+        })
+      );
+  } catch (err) {
+      console.error("Failed to mark messages as seen:", err);
+  }};
+
+
+
+
+  // For marking messages as seen 
+  // const markMessagesAsSeen = async (userId: string) => {
+  //   try {
+  //     await markMessagesAsSeenApi(userId);
+
+  //     // Update local messages state so the UI reflects the seen status.
+  //     setMessages((prevMessages) =>
+  //       prevMessages.map((msg) => {
+  //         // Only update messages received from the selected user.
+  //         if (String(msg.senderId) === String(userId)) {
+  //           return {
+  //             ...msg,
+  //             seenBy: Array.from(
+  //               new Set([
+  //                 ...(msg.seenBy || []).map(String),
+  //                 String(authUser?._id),
+  //               ])
+  //             ),
+  //           };
+  //         }
+
+  //         return msg;
+  //       })
+  //     );
+  //   } catch (err) {
+  //     console.error("Failed to mark messages as seen:", err);
+  //   }
+  // };
+
 
 
 // For Deleting Message
-const deleteMessage = async (messageId: string, receiverId: string, deleteForEveryone = false) => {
+const deleteMessage = async (
+  messageId: string,
+  receiverId: string,
+  deleteForEveryone = false
+) => {
+  try {
+    const res = await deleteMessageApi(
+      messageId,
+      receiverId,
+      deleteForEveryone
+    );
 
-    try {
-      await deleteMessageApi(messageId, receiverId, deleteForEveryone);
+    // ==========================================================
+    // DELETE FOR EVERYONE
+    // ==========================================================
 
-      if (deleteForEveryone) {
-        setMessages((prev) =>
-          prev.map((m) =>
-            m._id === messageId ? { 
-              ...m, text: "🛇 This message was deleted",
-               fileUrl: undefined, 
-               fileType: undefined, 
-               fileName: undefined, 
-               replyTo: undefined, 
-              } : m
-          )
+    if (deleteForEveryone) {
+      setMessages((prev) => {
+        const updatedMessages = prev.map((m) =>
+          m._id === messageId
+            ? {
+                ...m,
+                text: "🛇 This message was deleted",
+
+                fileUrl: undefined,
+                fileType: undefined,
+                filePublicId: undefined,
+                fileResourceType: undefined,
+                fileSize: undefined,
+
+                attachments: [],
+
+                replyTo: undefined,
+              }
+            : m
         );
-      } else {
-        setMessages((prev) => prev.filter((m) => m._id !== messageId));
-      }
 
-      toast.success(deleteForEveryone ? "Deleted for everyone" : "Deleted for you");
-      
-    } catch (err) {
-        toast.error(getErrorMessage(err, "Failed to delete message"));
+        const deletedMessage = updatedMessages.find(
+          (m) => m._id === messageId
+        );
 
+        updateSidebarAfterDelete(
+          receiverId,
+          updatedMessages,
+          deletedMessage
+        );
+
+        return updatedMessages;
+      });
+
+      toast.success("Deleted for everyone");
+
+      return;
     }
-  };
+
+    // ==========================================================
+    // DELETE FOR ME
+    // ==========================================================
+
+    setMessages((prev) => {
+      const updatedMessages = prev.filter(
+        (m) => m._id !== messageId
+      );
+
+      updateSidebarAfterDelete(
+        receiverId,
+        updatedMessages
+      );
+
+      return updatedMessages;
+    });
+
+    if (res.data.permanentlyDeleted) {
+      toast.success("Message permanently deleted");
+    } else {
+      toast.success("Deleted for you");
+    }
+
+  } catch (err) {
+    toast.error(
+      getErrorMessage(err, "Failed to delete message")
+    );
+  }
+};
+
+
+// const deleteMessage = async (messageId: string, receiverId: string, deleteForEveryone = false) => {
+
+//     try {
+//       await deleteMessageApi(messageId, receiverId, deleteForEveryone);
+
+//       if (deleteForEveryone) {
+//         setMessages((prev) =>
+//           prev.map((m) =>
+//             m._id === messageId ? { 
+//               ...m, text: "🛇 This message was deleted",
+//                fileUrl: undefined, 
+//                fileType: undefined, 
+//                fileName: undefined, 
+//                replyTo: undefined, 
+//               } : m
+//           )
+//         );
+//       } else {
+//         setMessages((prev) => prev.filter((m) => m._id !== messageId));
+//       }
+
+//       toast.success(deleteForEveryone ? "Deleted for everyone" : "Deleted for you");
+      
+//     } catch (err) {
+//         toast.error(getErrorMessage(err, "Failed to delete message"));
+
+//     }
+//   };
+
 
 // For Clearing Chat
 const clearChat = async (userId: string) => {  
@@ -230,7 +516,7 @@ const clearChat = async (userId: string) => {
     toast.success(res.data.message || "Chat cleared successfully");
 
   } catch (err) {
-           toast.error(getErrorMessage(err, "Failed to clear chat"));
+    toast.error(getErrorMessage(err, "Failed to clear chat"));
   }
 
 };
@@ -271,29 +557,29 @@ const forwardMessage = async (messageId: string, receiverId: string) => {
 
 
 // For Mark As Seen 
-  const markAsSeen = async ( receiverId: string ) => {  
+  // const markAsSeen = async ( receiverId: string ) => {  
 
-    try {
-      await markAsSeenApi(receiverId);
+  //   try {
+  //     await markAsSeenApi(receiverId);
 
-      if(!authUser) return;
-      setMessages(prev =>
-        prev.map(m => {
+  //     if(!authUser) return;
+  //     setMessages(prev =>
+  //       prev.map(m => {
             
-          // ensure seenBy is an array and userId is added only once
-          const seenBy = m.seenBy ?? [];
-          // if (seenBy.includes(userId)) return m;
-          if (seenBy.includes(authUser?._id)) return m;
+  //         // ensure seenBy is an array and userId is added only once
+  //         const seenBy = m.seenBy ?? [];
+  //         // if (seenBy.includes(userId)) return m;
+  //         if (seenBy.includes(authUser?._id)) return m;
 
-          return { ...m, seenBy: [...seenBy, authUser?._id] };
-        })
-      );
+  //         return { ...m, seenBy: [...seenBy, authUser?._id] };
+  //       })
+  //     );
     
-    } catch (err) {
-        toast.error(getErrorMessage(err, "Failed to mark message as seen"));
+  //   } catch (err) {
+  //       toast.error(getErrorMessage(err, "Failed to mark message as seen"));
 
-    }
-  };
+  //   }
+  // };
 
 
 
@@ -305,13 +591,17 @@ const forwardMessage = async (messageId: string, receiverId: string) => {
         getMessages,
         sendMessage,
         editMessage,
-        forwardMessage,
         deleteMessage,
-        reactToMessage,
-        markAsSeen,
         clearChat,
+        
 
-        // cancelReply
+        forwardMessage,
+        reactToMessage,
+
+        // markAsSeen,
+        markMessagesAsSeen,
+        
+
     }}>
       {children}
     </messageContext.Provider>

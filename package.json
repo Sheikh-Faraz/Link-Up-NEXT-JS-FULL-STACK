@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@react-oauth/google": "^0.13.4",
+    "@wavesurfer/react": "^1.0.12",
     "axios": "^1.13.5",
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
@@ -31,7 +32,8 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-hot-toast": "^2.6.0",
-    "tailwind-merge": "^3.4.1"
+    "tailwind-merge": "^3.4.1",
+    "wavesurfer.js": "^8.0.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

@@ -1,38 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// Models
 import Message from "@/models/Message";
-
-// Pusher
 import { pusher } from "@/lib/pusher";
-
-
 import { getCurrentUser } from "@/lib/getCurrentUser";
-import { uploadFileToCloudinary } from "@/lib/cloudinary-file-upload";
 
+const MAX_FILES = 10;
+const MAX_FILE_SIZE = 25 * 1024 * 1024;
+const MAX_TOTAL_SIZE = 50 * 1024 * 1024;
 
 export async function POST(req: NextRequest) {
   try {
     const currentUser = await getCurrentUser(req);
+
     const senderId = currentUser._id;
 
-    const formData = await req.formData();
+    const body = await req.json();
 
-    const receiverId = formData.get("receiverId")?.toString();
-    const text = formData.get("text")?.toString() || "";
-    const fileName = formData.get("fileName")?.toString() || "";
-
-    let replyTo = formData.get("replyTo")?.toString() || null;
-
-    if (replyTo) {
-      replyTo = JSON.parse(replyTo);
-    }
-
-    const file = formData.get("file");
-
-    // --------------------------------------------------
-    // Validate receiver
-    // --------------------------------------------------
+    const {
+      receiverId,
+      text = "",
+      replyTo = null,
+      attachments = [],
+    } = body;
 
     if (!receiverId) {
       return NextResponse.json(
@@ -41,66 +30,64 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // --------------------------------------------------
-    // File information
-    // --------------------------------------------------
-
-    let fileUrl = "";
-    let fileType = "";
-    let filePublicId = "";
-    let fileResourceType = "";
-
-    // --------------------------------------------------
-    // Upload file to Cloudinary
-    // --------------------------------------------------
-
-    if (file instanceof File && file.size > 0) {
-      console.log("Chat file upload:", {
-        name: file.name,
-        type: file.type,
-        size: file.size,
-      });
-
-      const uploaded = await uploadFileToCloudinary(
-        file,
-        "chat-files"
+    if (!Array.isArray(attachments)) {
+      return NextResponse.json(
+        { message: "Attachments must be an array" },
+        { status: 400 }
       );
-
-      fileUrl = uploaded.url;
-      filePublicId = uploaded.public_id;
-      fileResourceType = uploaded.resource_type;
-
-      // Prefer the browser's MIME type for displaying the file
-      fileType = file.type;
-
-      console.log("Chat file uploaded:", {
-        url: fileUrl,
-        public_id: filePublicId,
-        resource_type: fileResourceType,
-        format: uploaded.format,
-      });
     }
 
-    // --------------------------------------------------
-    // Create message
-    // --------------------------------------------------
+    if (attachments.length > MAX_FILES) {
+      return NextResponse.json(
+        { message: `You can attach up to ${MAX_FILES} files per message.`, },
+        { status: 400 }
+      );
+    }
+
+    const totalSize = attachments.reduce(
+      (total: number, file: any) => total + (file.fileSize || 0),
+      0
+    );
+
+    for (const file of attachments) {
+      if (!file.fileName || !file.fileUrl) {
+        return NextResponse.json(
+          { message: "Invalid attachment data." },
+          { status: 400 }
+        );
+      };
+
+      if (file.fileSize > MAX_FILE_SIZE) {
+        return NextResponse.json(
+          { message: `${file.fileName} exceeds the 25 MB file limit.`,  },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (totalSize > MAX_TOTAL_SIZE) {
+      return NextResponse.json(
+        { message: "The total attachment size cannot exceed 50 MB.",  },
+        { status: 400 }
+      );
+    }
 
     const message = await Message.create({
       senderId,
       receiverId,
       text,
       replyTo,
-      fileUrl,
-      fileType,
-      fileName,
-      filePublicId,
-      fileResourceType,
+      attachments,
+
+      // Keep old fields populated for compatibility
+      fileName: attachments[0]?.fileName || "",
+      fileUrl: attachments[0]?.fileUrl || "",
+      fileType: attachments[0]?.fileType || "",
+      filePublicId: attachments[0]?.filePublicId || "",
+      fileResourceType: attachments[0]?.fileResourceType || "",
+
       seenBy: [],
     });
-
-    // --------------------------------------------------
-    // Format message for Pusher
-    // --------------------------------------------------
 
     const formattedMessage = {
       _id: message._id,
@@ -108,21 +95,17 @@ export async function POST(req: NextRequest) {
       receiverId: message.receiverId,
       text: message.text,
       createdAt: message.createdAt,
-
       replyTo: message.replyTo,
+      attachments: message.attachments,
 
+      fileName: message.fileName,
       fileUrl: message.fileUrl,
       fileType: message.fileType,
-      fileName: message.fileName,
       filePublicId: message.filePublicId,
       fileResourceType: message.fileResourceType,
 
       seenBy: message.seenBy,
     };
-
-    // --------------------------------------------------
-    // Pusher chat ID
-    // --------------------------------------------------
 
     const chatId =
       senderId.toString() < receiverId
@@ -135,20 +118,18 @@ export async function POST(req: NextRequest) {
       formattedMessage
     );
 
-    // --------------------------------------------------
-    // Response
-    // --------------------------------------------------
-
     return NextResponse.json(
-      {sendedMessage: formattedMessage,},
-      {status: 201,}
+      { sendedMessage: formattedMessage,  },
+      { status: 201,  }
     );
+    
   } catch (error) {
-    console.error("Send message error:", error);
 
+    console.error("Send message error:", error);
     return NextResponse.json(
-      {message: "Server error",},
-      {status: 500,}
+      { message: "Server error" },
+      { status: 500 }
     );
+
   }
 }

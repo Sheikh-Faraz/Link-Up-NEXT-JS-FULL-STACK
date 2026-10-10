@@ -1,5 +1,41 @@
 import mongoose from "mongoose";
 
+const attachmentSchema = new mongoose.Schema(
+  {
+    fileName: {
+      type: String,
+      required: true,
+    },
+
+    fileUrl: {
+      type: String,
+      required: true,
+    },
+
+    fileType: {
+      type: String,
+      default: "",
+    },
+
+    filePublicId: {
+      type: String,
+      default: "",
+    },
+
+    fileResourceType: {
+      type: String,
+      default: "",
+    },
+
+    fileSize: {
+      type: Number,
+      default: 0,
+    },
+  },
+  { _id: false }
+);
+
+
 const messageSchema = new mongoose.Schema(
   {
     senderId: {
@@ -43,8 +79,13 @@ const messageSchema = new mongoose.Schema(
       default: "",
     },
 
-    // Edit/Delete
+    attachments: {
+      type: [attachmentSchema],
+      default: [],
+    },
+
     isEdited: { type: Boolean, default: false },
+
     isDeletedFor: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
 
     // Forward / Reply

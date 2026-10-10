@@ -1,4 +1,6 @@
 import axiosInstance from "@/lib/axios";
+import type { ReplyToMessage } from "@/types/message.type";
+
 
 // --------------------------------------
 // DONE (4). TESTED (4/8) REMAINING (4), TOTAL (8)
@@ -14,10 +16,19 @@ export const getMessagesApi = (receiverId: string) => {
 
 
 // 2. ✅ Done / Tested
-export const sendMessageApi = (formData: FormData) => {
-    const res = axiosInstance.post("/messages/send-message", formData);
-    return  res;
+export const sendMessageApi = (
+data: {
+  receiverId: string;
+  text: string;
+  replyTo?: ReplyToMessage;
+  attachments: any[];
+}) => {
+  return axiosInstance.post("/messages/send-message", data);
 };
+// export const sendMessageApi = (formData: FormData) => {
+//     const res = axiosInstance.post("/messages/send-message", formData);
+//     return  res;
+// };
 
 
 // 3. ✅ Done /  Tested
@@ -35,6 +46,12 @@ export const deleteMessageApi = (messageId: string, receiverId: string, deleteFo
 // 5. ✅ Done /  Tested
 export const clearChatApi = (userId: string) => {
     return axiosInstance.delete(`/messages/clear-chat/${userId}`);
+};
+
+
+// 6. ✅ Done /  Tested
+export const markMessagesAsSeenApi = (userId: string) => {
+  return axiosInstance.patch(`/messages/seen/${userId}`);
 };
 
 
@@ -57,10 +74,5 @@ export const forwardMessageApi = (receiverId: string, messageId: string) => {
 
 export const reactToMessageApi = (messageId: string, reaction: string) => {
     return axiosInstance.post("/messages/react", { messageId, reaction });
-};
-
-
-export const markAsSeenApi = (messageIds: string) => {
-    return axiosInstance.post("/messages/mark-as-seen", { messageIds });
 };
 

@@ -13,15 +13,47 @@ export interface Message {
   }[];
   replyTo?: string | null;     // message ID this one replies to
   seenBy?: string[];           // users who have seen the message
-  // seen?: boolean;           // users who have seen the message
-  // ✨ New fields for uploads
+
+  // Legacy
   fileUrl?: string;   // where file/image is stored
   fileType?: string;  // like "image/png" or "application/pdf"
+
+  // New
+  attachments?: Attachment[];
 };
+
 
 export interface ReplyToMessage {
   text?: string; 
   fileUrl?: string; 
   fileType?: string; 
-  fileName?: string,
+  fileName?: string;
+  fileSize?: number;
+  attachments?: Attachment[];
 };
+
+
+export interface LastMessage {
+  _id: string;
+  senderId: string;
+  receiverId: string;
+  text?: string;
+  fileName?: string;
+  fileType?: string;
+  attachments?: {
+    fileName: string;
+    fileType?: string;
+  }[];
+  seenBy?: string[];           // users who have seen the message
+  createdAt: string;
+}
+
+
+export interface Attachment {
+  fileName: string;
+  fileUrl: string;
+  fileType?: string;
+  filePublicId?: string;
+  fileResourceType?: string;
+  fileSize?: number;
+}

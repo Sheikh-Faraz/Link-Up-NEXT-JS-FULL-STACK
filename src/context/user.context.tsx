@@ -18,8 +18,10 @@ import {
 
 } from "@/services/user.service";
 
-// Interface for User type (you can expand this in user.types.ts)
-import type { User } from "@/types/user.types";
+// Interface for User type
+import { Message, LastMessage } from "@/types/message.type";
+import { User } from "@/types/user.types";
+// import { User, LastMessage } from "@/types/user.types";
 
 // Utility to extract error messages
 import { getErrorMessage } from "@/lib/error";
@@ -36,21 +38,40 @@ interface userContextType {
 
     selectedUser: User | null;
     setSelectedUser: (user: User | null) => void;
+    
+    updateUserLastMessage: (
+      userId: string,
+      lastMessage: User["lastMessage"] | null
+    ) => void;
+
+    updateSidebarLastMessageSeen: (
+      readerId: string,
+      messageSenderId: string
+    ) => void;
+
+    updateSidebarAfterDelete: (
+      userId: string,
+      remainingMessages: Message[],
+      deletedMessage?: Message
+    ) => void;
+
     users: User[];
+
+    setUsers : (users: User[]) => void;  
+
     isUsersLoading: boolean;
     
-    fetchUser: () => Promise<void>;                             // DONE
+    fetchUser: () => Promise<void>;                            
 
     updateUserProfile: (formData: FormData) => Promise<void>;
-    // updateUserProfile: (data: unknown) => Promise<void>;     // DONE
-    selectUser: (user: User | null) => void;                    // DONE
-    getUsers: () => Promise<void>;                              // DONE
-    addContact: (UserId: string) => Promise<void>;              // DONE
-    blockUser: (userId: string) => Promise<void>;               // DONE
-    unblockUser: (userId: string) => Promise<void>;             // DONE
-    deleteUser: (userId: string) => Promise<void>;              // DONE
-    getHiddenOrBlockedUsers: () => Promise<void>;               // DONE
-    restoreUser: (userId: string) => Promise<void>;             // DONE
+    selectUser: (user: User | null) => void;                    
+    getUsers: () => Promise<void>;                              
+    addContact: (UserId: string) => Promise<void>;              
+    blockUser: (userId: string) => Promise<void>;               
+    unblockUser: (userId: string) => Promise<void>;             
+    deleteUser: (userId: string) => Promise<void>;              
+    getHiddenOrBlockedUsers: () => Promise<void>;               
+    restoreUser: (userId: string) => Promise<void>;             
 
 }
 
@@ -144,10 +165,163 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
 
 
 
-//   For Selecting User
+// Move user to the top of list code
+const updateUserLastMessage = (
+  userId: string,
+  lastMessage: User["lastMessage"] | null
+) => {
+  setUsers((prevUsers) =>
+    prevUsers
+      .map((user) =>
+        user._id === userId
+          ? {
+              ...user,
+              lastMessage,
+            }
+          : user
+      )
+      .sort((a, b) => {
+        const aTime = a.lastMessage?.createdAt
+          ? new Date(a.lastMessage.createdAt).getTime()
+          : 0;
+
+        const bTime = b.lastMessage?.createdAt
+          ? new Date(b.lastMessage.createdAt).getTime()
+          : 0;
+
+        return bTime - aTime;
+      })
+  );
+};
+
+
+// Update the seen for lastmessage sidebar
+const updateSidebarLastMessageSeen = (
+  readerId: string,
+  messageSenderId: string
+) => {
+  setUsers((prevUsers) =>
+    prevUsers.map((user) => {
+      const lastMessage = user.lastMessage;
+
+      // Only update the sidebar entry for the reader.
+      if (String(user._id) !== String(readerId) || !lastMessage) {
+        return user;
+      }
+
+      // Only update if the latest message is from the current user
+      // and was sent to the reader who just read it.
+      if (
+        String(lastMessage.senderId) !== String(messageSenderId) ||
+        String(lastMessage.receiverId) !== String(readerId)
+      ) {
+        return user;
+      }
+
+      return {
+        ...user,
+        lastMessage: {
+          ...lastMessage,
+          seenBy: Array.from(
+            new Set([
+              ...(lastMessage.seenBy ?? []).map(String),
+              String(readerId),
+            ])
+          ),
+        },
+      };
+    })
+  );
+};
+
+
+
+// Update sidebar when a message is deleted
+const updateSidebarAfterDelete = (
+  userId: string,
+  remainingMessages: Message[],
+  deletedMessage?: Message
+) => {
+  let latestMessage: Message | undefined = undefined;
+
+  if (remainingMessages.length > 0) {
+    latestMessage = remainingMessages[remainingMessages.length - 1];
+  }
+
+  setUsers((prevUsers) =>
+    prevUsers
+      .map((user) => {
+        if (user._id !== userId) {
+          return user;
+        }
+
+        // A remaining message exists.
+        if (latestMessage) {
+          const sidebarMessage: LastMessage = {
+            _id: latestMessage._id,
+            senderId: latestMessage.senderId,
+            receiverId: latestMessage.receiverId,
+            text: latestMessage.text,
+            fileType: latestMessage.fileType,
+            attachments: latestMessage.attachments?.map((attachment) => ({
+              fileName: attachment.fileName,
+              fileType: attachment.fileType,
+            })),
+            createdAt: latestMessage.createdAt,
+            seenBy: latestMessage.seenBy?.map(String) ?? [],
+          };
+
+          return {
+            ...user,
+            lastMessage: sidebarMessage,
+          };
+        }
+
+        // No messages remain.
+        // If a deleted-for-everyone message was supplied,
+        // show the deleted placeholder.
+        if (deletedMessage) {
+          const sidebarMessage: LastMessage = {
+            _id: deletedMessage._id,
+            senderId: deletedMessage.senderId,
+            receiverId: deletedMessage.receiverId,
+            text: "🛇 This message was deleted",
+            attachments: [],
+            createdAt: deletedMessage.createdAt,
+          };
+
+          return {
+            ...user,
+            lastMessage: sidebarMessage,
+          };
+        }
+
+        // No messages at all.
+        return {
+          ...user,
+          lastMessage: null,
+        };
+      })
+      .sort((a, b) => {
+        const aTime = a.lastMessage?.createdAt
+          ? new Date(a.lastMessage.createdAt).getTime()
+          : 0;
+
+        const bTime = b.lastMessage?.createdAt
+          ? new Date(b.lastMessage.createdAt).getTime()
+          : 0;
+
+        return bTime - aTime;
+      })
+  );
+};
+
+
+  //  For Selecting User
   const selectUser = (user: User | null) => {
     setSelectedUser(user);
   };
+
 
 //   For Fetching/Getting Users
   const getUsers = async () => {
@@ -166,6 +340,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  
 //   For Blocking User
   const blockUser = async (userId: string) => {
 
@@ -335,6 +510,12 @@ const fetchUser = async () => {
     <userContext.Provider value={{ 
         users,
         setSelectedUser,
+        setUsers,
+
+        updateUserLastMessage,
+        updateSidebarLastMessageSeen,
+        updateSidebarAfterDelete,
+
         isUsersLoading,
         selectedUser,
 

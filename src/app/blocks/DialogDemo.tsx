@@ -42,7 +42,7 @@ const handleAddContact = async (e: FormEvent<HTMLFormElement>) => {
           <Button 
             variant="outline" 
             // className="flex items-center border border-gray-300 rounded-md py-2 px-4 font-medium text-sm max-[425px]:text-xs max-[315px]:mt-4"
-            className="flex items-center border border-gray-300 rounded-full py-2 px-4 font-medium text-sm max-[425px]:text-xs max-[315px]:mt-4"
+            className="flex items-center bg-secondary border border-gray-300 rounded-full py-2 px-4 font-medium text-sm max-[425px]:text-xs max-[315px]:mt-4"
             >
             <CirclePlus className="size-4"/>
               Add Contact

@@ -20,7 +20,18 @@ import VoiceRecorder from "@/app/blocks/VoiceRecorder";
 import toast from "react-hot-toast";
 
 // Icons
-import { Smile, Paperclip, X, SendHorizontal, MoreVertical, LoaderCircle } from "lucide-react";
+import { 
+  Smile, 
+  Paperclip, 
+  X, 
+  SendHorizontal, 
+  MoreVertical, 
+  LoaderCircle,
+  Image as ImageIcon,
+  Clapperboard,
+  Music,
+  Files,
+} from "lucide-react";
 import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
 
 
@@ -36,12 +47,26 @@ export default function ChatInput() {
     // States
     const [message, setMessage] = useState("");
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-    const [file, setFile] = useState<File | null>(null);
+
+    // const [file, setFile] = useState<File | null>(null);
+    const [files, setFiles] = useState<File[]>([]);
+
     const [showPreview, setShowPreview] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
 
     const pickerRef = useRef<HTMLDivElement | null>(null);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+    // New Refs
+    const imageInputRef    = useRef<HTMLInputElement | null>(null);
+    const documentInputRef = useRef<HTMLInputElement | null>(null);
+    const audioInputRef    = useRef<HTMLInputElement | null>(null);
+    const videoInputRef    = useRef<HTMLInputElement | null>(null);
+
+    // Contants/limits
+    const MAX_FILES = 10;
+    const MAX_FILE_SIZE = 25 * 1024 * 1024;
+    const MAX_TOTAL_SIZE = 50 * 1024 * 1024;
 
     // const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL; 
 
@@ -66,7 +91,14 @@ export default function ChatInput() {
       };
 
       setIsUploading(true);
-      await sendMessage(selectedUser._id, /* text */ "", replyData, voiceFile, voiceFile.name);
+      await sendMessage(
+        selectedUser._id, 
+        "", 
+        replyData, 
+        [voiceFile], 
+        // voiceFile, 
+        // voiceFile.name
+      );
       previewingToggle(false);
       setIsUploading(false);
 
@@ -97,7 +129,9 @@ export default function ChatInput() {
 
     // For sending/making message
     const handleSend = async () => {
-      if ((!message.trim() && !file) || !selectedUser) return;
+      if ((!message.trim() && files.length === 0) || !selectedUser) {
+        return;
+      }
       
       let replyData;
       if (replyingTo) {
@@ -114,14 +148,16 @@ export default function ChatInput() {
         selectedUser._id,
         message, 
         replyData,
-        file || undefined,
-        file?.name || "",
+        files,
+        // file || undefined,
+        // file?.name || "",
       )
 
       setIsUploading(false);
 
       setMessage("");
-      setFile(null);
+      setFiles([]);
+      // setFile(null);
       setShowPreview(false);
       cancelReply(); // clear the reply box
     };
@@ -132,25 +168,78 @@ export default function ChatInput() {
     };
 
 
-    // Changing and limiting file change to 25 MB
-    const MAX_FILE_SIZE = 25 * 1024 * 1024;
-
     const handleFileChange = (
       e: React.ChangeEvent<HTMLInputElement>
     ) => {
-      const selectedFile = e.target.files?.[0];
+      const selectedFiles = Array.from(e.target.files || []);
 
-      if (!selectedFile) return;
+      if (selectedFiles.length === 0) return;
 
-      if (selectedFile.size > MAX_FILE_SIZE) {
-        toast.error("File must be smaller than 25 MB");
-        e.target.value = "";
-        return;
+      const newFiles = [...files];
+
+      for (const file of selectedFiles) {
+        if (newFiles.length >= MAX_FILES) {
+          toast.error(`You can select up to ${MAX_FILES} files.`);
+          break;
+        }
+
+        if (file.size > MAX_FILE_SIZE) {
+          toast.error(`${file.name} is larger than 25 MB.`);
+          continue;
+        }
+
+        const currentTotal = newFiles.reduce(
+          (total, item) => total + item.size,
+          0
+        );
+
+        if (currentTotal + file.size > MAX_TOTAL_SIZE) {
+          toast.error("Total attachments cannot exceed 50 MB.");
+          break;
+        }
+
+        const duplicate = newFiles.some(
+          (existing) =>
+            existing.name === file.name &&
+            existing.size === file.size &&
+            existing.lastModified === file.lastModified
+        );
+
+        if (duplicate) {
+          continue;
+        }
+
+        newFiles.push(file);
       }
 
-      setFile(selectedFile);
-      setShowPreview(true);
+      // setFiles(newFiles);
+
+      setFiles(newFiles);
+
+      if (newFiles.length > 0) {
+        setShowPreview(true);
+      }
+
+      e.target.value = "";
     };
+
+
+    // const handleFileChange = (
+    //   e: React.ChangeEvent<HTMLInputElement>
+    // ) => {
+    //   const selectedFile = e.target.files?.[0];
+
+    //   if (!selectedFile) return;
+
+    //   if (selectedFile.size > MAX_FILE_SIZE) {
+    //     toast.error("File must be smaller than 25 MB");
+    //     e.target.value = "";
+    //     return;
+    //   }
+
+    //   setFile(selectedFile);
+    //   setShowPreview(true);
+    // };
 
   return (
     <div className="relative p-3 w-full max-[560px]:p-1">
@@ -168,122 +257,114 @@ export default function ChatInput() {
       )}
 
         {/* ===================== Preview Dialog ===================== */}
-            <Dialog open={showPreview} onOpenChange={setShowPreview}>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Preview</DialogTitle>
-                </DialogHeader>
-                            {/* File preview */}
-            {file?.type.startsWith("image/") ? (
-              <img
-                src={URL.createObjectURL(file)}
-                alt="preview"
-                className="w-full h-full object-cover rounded-md mb-2 border"
-              />
-            ) : (
-              <div className="flex items-center space-x-2 bg-gray-50 p-2 rounded-md mb-2">
-                <Paperclip className="w-5 h-5 text-gray-500" />
-                <div className="flex-1 max-w-xs">
-                  <span className="text-sm font-medium block truncate">
-                    {file?.name}
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    {formatFileSize(file?.size || 0)}
-                  </span>
+        <Dialog open={showPreview} onOpenChange={setShowPreview}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Attachments</DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+              {files.map((file, index) => (
+                <div
+                  key={`${file.name}-${file.lastModified}-${index}`}
+                  className="flex items-center gap-3 border rounded-md p-2"
+                >
+                  {/* Image preview */}
+                  {file.type.startsWith("image/") ? (
+                    <img
+                      src={URL.createObjectURL(file)}
+                      alt={file.name}
+                      className="w-16 h-16 object-cover rounded-md"
+                    />
+                  ) : file.type.startsWith("video/") ? (
+                    <video
+                      src={URL.createObjectURL(file)}
+                      className="w-16 h-16 object-cover rounded-md"
+                      controls
+                    />
+                  ) : file.type.startsWith("audio/") ? (
+                    <div className="w-16 h-16 flex items-center justify-center rounded-md bg-muted">
+                      🎵
+                    </div>
+                  ) : (
+                    <div className="w-16 h-16 flex items-center justify-center rounded-md bg-muted">
+                      <Paperclip className="size-5 text-muted-foreground" />
+                    </div>
+                  )}
+
+                  {/* File information */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">
+                      {file.name}
+                    </p>
+
+                    <p className="text-xs text-muted-foreground">
+                      {formatFileSize(file.size)}
+                    </p>
+                  </div>
+
+                  {/* Remove file */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFiles((prev) =>
+                        prev.filter((_, fileIndex) => fileIndex !== index)
+                      );
+                    }}
+                    className="p-1 text-muted-foreground hover:text-red-500"
+                  >
+                    <X className="size-4" />
+                  </button>
                 </div>
-              </div>
-            )}
-                <DialogFooter className="mt-4">
-            <div className="flex flex-col space-y-4 w-full">
+              ))}
+            </div>
 
-            {/* Caption input */}
-            <div className="flex space-x-2">
+            {/* Total */}
+            <p className="text-xs text-muted-foreground">
+              {files.length}/{MAX_FILES} files ·{" "}
+              {formatFileSize(
+                files.reduce((total, file) => total + file.size, 0)
+              )}{" "}
+              / 50 MB
+            </p>
 
+            {/* Input for text */}
             <input
               type="text"
-              placeholder="Add a caption..."
-              // className="flex-1 mt-1 border border-red-600 rounded-md px-2 py-2 text-sm outline-none focus:ring-1 focus:ring-blue-400"
-              className="flex-1 mt-1 border border-gray-300 rounded-md px-2 py-2 text-sm outline-none focus:ring-1 focus:ring-blue-400"
+              placeholder="Enter message..."
+              className="flex-1 px-2 py-2 max-[560px]:p-1 max-[320px]:text-xs rounded-md text-sm border"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSend()}
               disabled={isUploading}
             />
 
-            {/* Send Button */}
-            <button
-              onClick={handleSend}
-              disabled={isUploading}
-              className="w-fit p-2 bg-green-400 text-white rounded-md flex justify-center items-center hover:bg-green-300 disabled:opacity-60 disabled:cursor-not-allowed transition"
-            >
-              {isUploading ? (
-                <>
-                  <LoaderCircle className="animate-spin size-5 max-[320px]:size-4"/> 
-                </>
-              ) : (
-                <>
-                  <SendHorizontal className="w-4 h-4 mr-1" />
-                  {/* Send */}
-                </>
-              )}
-            </button>
-              </div>
-                  <Button variant="outline" onClick={() => setShowPreview(false)}>
-                    Cancel
-                  </Button>
-            </div>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-      {/* ======================================================================================================== */}
+            <DialogFooter className="mt-4">
+              <Button
+                variant="outline"
+                onClick={() => setShowPreview(false)}
+                >
+                Cancel
+              </Button>
 
-      {/* ======================================================================================================== */}
-                                                  {/* REPLY BOX */}
-      {/* ======================================================================================================== */}
-      {/* 🟦 Reply box (shows when user clicks “Reply”) */}
-{replyingTo && (
-  <div className="absolute bottom-16 left-0 w-full px-3 z-20">
-  <div className="flex items-center justify-between bg-gray-100 mr-3 p-2 mb-2 rounded-md border-l-4 border-green-500">
-  
-    <div className="flex flex-col text-sm max-w-[80%]">
-      <span className="text-gray-600 font-medium mb-0.5">Replying to</span>
-
-      {/* Text message */}
-      {replyingTo.text && (
-        <span className="text-gray-800 truncate">{replyingTo.text}</span>
-      )}
-
-      {/* Image message */}
-      {replyingTo.fileUrl &&
-      replyingTo.fileType?.startsWith("image/") && (
-        <img
-          src={replyingTo.fileUrl}
-          alt="reply"
-          className="w-12 h-12 object-cover rounded mt-1"
-        />
-      )}
-
-      {/* Document message */}
-      {replyingTo.fileUrl &&
-      !replyingTo.fileType?.startsWith("image/") && (
-        <span className="text-gray-500 text-xs mt-1">
-          📄 {replyingTo.fileName}
-        </span>
-      )}
-
-    </div>
-
-
-    {/* Cancel button */}
-    <button
-      onClick={() => cancelReply()}
-      className="text-gray-400 hover:text-gray-600 transition"
-    >
-      <X className="w-4 h-4" />
-    </button>
-    </div>
-  </div>
-)}
-
+              <Button
+                variant="outline"
+                onClick={handleSend}
+                disabled={isUploading || files.length === 0}
+              >
+                {isUploading ? (
+                  <LoaderCircle className="animate-spin size-5" />
+                ) : (
+                  <>
+                    {/* <SendHorizontal className="size-4" /> */}
+                    {/* <SendHorizontal className="size-4 mr-1" /> */}
+                    Send
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
       {/* ======================================================================================================== */}
               {/* Main input area */}
@@ -350,6 +431,45 @@ export default function ChatInput() {
           onChange={handleFileChange}
         />
 
+        {/* New Inputs */}
+        <input
+          ref={imageInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          className="hidden"
+          onChange={handleFileChange}
+        />
+
+        <input
+          ref={documentInputRef}
+          type="file"
+          accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv"
+          multiple
+          className="hidden"
+          onChange={handleFileChange}
+        />
+
+        <input
+          ref={audioInputRef}
+          type="file"
+          accept="audio/*"
+          multiple
+          className="hidden"
+          onChange={handleFileChange}
+        />
+
+        <input
+          ref={videoInputRef}
+          type="file"
+          accept="video/*"
+          multiple
+          className="hidden"
+          onChange={handleFileChange}
+        />
+
+
+        {/* On click opens the emjois to be selected from */}
         <button
           className="p-2 hover:text-[#6FD5AA] relative cursor-pointer max-[560px]:hidden"
           onClick={() => setShowEmojiPicker((prev) => !prev)}
@@ -358,13 +478,64 @@ export default function ChatInput() {
           <Smile className="size-4" />
         </button>
 
-        <button
+
+        {/* On click opens dropdown for different type of document to send/select */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              className="p-2 hover:text-[#6FD5AA] cursor-pointer"
+              disabled={isUploading}
+            >
+              <Paperclip className="size-4" />
+            </button>
+          </DropdownMenuTrigger>
+
+          <DropdownMenuContent align="end">
+
+            <DropdownMenuItem
+              onClick={() => imageInputRef.current?.click()}
+              className="cursor-pointer"
+            >
+              <ImageIcon />
+              <span className="ml-2">Photos</span>
+            </DropdownMenuItem>
+
+            <DropdownMenuItem
+              onClick={() => documentInputRef.current?.click()}
+              className="cursor-pointer"
+            >
+              <Files />
+              <span className="ml-2">Documents</span>
+            </DropdownMenuItem>
+
+            <DropdownMenuItem
+              onClick={() => audioInputRef.current?.click()}
+              className="cursor-pointer"
+            >
+              <Music />
+              <span className="ml-2">Audio</span>
+            </DropdownMenuItem>
+
+            <DropdownMenuItem
+              onClick={() => videoInputRef.current?.click()}
+              className="cursor-pointer"
+            >
+              <Clapperboard />
+              <span className="ml-2">Videos</span>
+            </DropdownMenuItem>
+
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {/* <button
           className="p-2 hover:text-[#6FD5AA] cursor-pointer max-[560px]:hidden"
           onClick={() => fileInputRef.current?.click()}
           disabled={isUploading}
         >
           <Paperclip className="size-4" />
-        </button>
+        </button> */}
+
+
 
         <div className="hidden max-[560px]:block">
           <DropdownMenu>

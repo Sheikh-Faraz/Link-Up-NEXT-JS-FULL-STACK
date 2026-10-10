@@ -1,3 +1,21 @@
+import { LastMessage } from "./message.type"
+
+// export interface LastMessage {
+//   senderId: string;
+//   receiverId: string;
+//   text?: string;
+//   fileName?: string;
+//   fileType?: string;
+
+//   attachments?: {
+//     fileName: string;
+//     fileType: string;
+//   }[];
+
+//   createdAt: string;
+// }
+
+
 export interface User {
   UserId: string;
   _id: string;
@@ -5,12 +23,17 @@ export interface User {
   email: string;
   profilePic?: string;
   about?: string;
+
   blockedUsers: string[];
   isDeletedFor: string[];
   provider?: string;
   createdAt: string;
 
-  // 🔥 ADD THESE (frontend-only helpers)
-  isBlocked?: boolean;     // I blocked them
-  hasBlockedMe?: boolean;  // they blocked me
+  // Frontend helpers
+  isBlocked?: boolean;
+  hasBlockedMe?: boolean;
+
+  // Sidebar
+  lastMessage?: LastMessage | null;
 }
+

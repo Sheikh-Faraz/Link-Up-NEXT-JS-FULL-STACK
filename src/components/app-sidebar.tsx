@@ -52,7 +52,7 @@ interface User {
 export function AppSidebar() {
 
   // Contexts
-  const { selectUser, users, isUsersLoading, getUsers, blockUser, unblockUser, deleteUser } = useUser();
+  const { selectedUser, selectUser, users, isUsersLoading, getUsers, blockUser, unblockUser, deleteUser } = useUser();
   const { authUser } = useAuth();
 
   // Base url for images
@@ -117,7 +117,7 @@ export function AppSidebar() {
           <div className="flex flex-col space-y-1.5 py-4 px-6 mb-4">
             <div
               tabIndex={0}
-              className="flex items-center text-center my-2 p-2 max-[375px]:p-1 rounded-full transition-colors duration-200 border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50"
+              className="flex items-center text-center my-2 p-2 max-[375px]:p-1 rounded-full transition-colors duration-200 border bg-secondary shadow-xs hover:bg-accent hover:text-accent-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50"
             >
               <Search className="size-4" />
               <input
@@ -142,30 +142,40 @@ export function AppSidebar() {
                 <>
                 {/* When filtered users exist */}
                 {filteredUsers.length > 0 ? (
-                    filteredUsers.map((user) => (
+                    filteredUsers.map((user) => {
 
+                    const isSelected = selectedUser?._id === user._id;
+                    
+                    return (
                       <div 
                         key={user._id} 
                         onClick={() => selectUser(user)}
-                        className="flex justify-between items-center border-b hover:bg-muted cursor-pointer"  
-                        // className="relative"
+                        className={`
+                          flex items-center justify-between
+                          border-b cursor-pointer
+                          border-l-2
+                          transition-colors
+                          ${
+                            isSelected
+                              ? "bg-muted border-l-[#6FD5AA]"
+                              : "border-l-transparent hover:bg-muted/70"
+                          }
+                        `}
                       >                      
                         <ContactBlock
-                          key={user._id}
                           id={user._id || ""}
                           name={user.fullName ?? "Unknown"}
                           profilePic={user.profilePic ?? avatar.src}
-                          // onClick={() => selectUser(user)}
+                          currentUserId={authUser?._id || ""}
+                          lastMessage={user.lastMessage || null}
                         />
-                          <div 
-                            // className="absolute top-3 right-3 border border-red-600"
-                          >
+                          <div>
                                       <DropdownMenu>
 
                                               <DropdownMenuTrigger asChild>
                                                 <Button 
                                                   variant="outline"
-                                                  className="rounded-full w-fit mr-6! p-2!"
+                                                  className="rounded-full w-fit mr-4! p-2!"
                                                 >
                                                   <Ellipsis className="size-3" />
                                                 </Button>
@@ -233,7 +243,9 @@ export function AppSidebar() {
                                            </DropdownMenu>
                                    </div>
                       </div>
-                    ))
+                    )
+                  }
+                  )
                   ) 
 
                    : search.trim().length > 0 ? (

@@ -1,12 +1,21 @@
 "use client";
 
-import toast from "react-hot-toast";
-import { createContext, useContext, useState } from "react";
+import { useEffect, useRef, createContext, useContext, useState } from "react";
 
 // For realtime functionality
-import Pusher from "pusher-js";
-import { useEffect, useRef } from "react";
+// import Pusher from "pusher-js";
+import Pusher, { type PresenceChannel } from "pusher-js";
+// import { getPusherClient } from "@/lib/pusher-client";
+
+// Contexts
 import { useUser } from "./user.context"; // 👈 IMPORTANT (selectedUser)
+import { useAuth } from "./auth.context";
+
+// Interface for User type (you can expand this in user.types.ts)
+import type { ReplyToMessage, Message } from "@/types/message.type";
+
+// Utility to extract error messages
+import { getErrorMessage, } from "@/lib/error";
 
 // APIs
 import { 
@@ -16,25 +25,26 @@ import {
   getMessagesApi, 
   sendMessageApi,
   
-  
   markMessagesAsSeenApi, 
   forwardMessageApi, 
   reactToMessageApi, 
 } from "@/services/message.service";
 
-// Interface for User type (you can expand this in user.types.ts)
-import type { ReplyToMessage, Message } from "@/types/message.type";
+// For Notifications
+import toast from "react-hot-toast";
 
-// Utility to extract error messages
-import { getErrorMessage, } from "@/lib/error";
-
-// authUser from Auth Context
-import { useAuth } from "./auth.context";
 
 
 interface messageContextType {
     messages: Message[];
     isMessagesLoading: boolean;
+
+    viewingUsers: Record<
+      string,
+      { isViewing: boolean; updatedAt: number }
+    >;
+
+
     getMessages: (userId: string) => Promise<void>;
     sendMessage: (
       receiverId: string,
@@ -60,6 +70,15 @@ export const MessageProvider = ({ children }: { children: React.ReactNode }) => 
   const [messages, setMessages] = useState<Message[]>([]);
   const [isMessagesLoading, setIsMessagesLoading] = useState(false);
 
+
+  const pusherRef = useRef<Pusher | null>(null);
+  const [pusherReady, setPusherReady] = useState(false);
+
+
+  const [viewingUsers, setViewingUsers] = useState<
+    Record<string, { isViewing: boolean; updatedAt: number }>
+  >({});
+
   // Importing authUser from Auth Context to use in markAsSeen function
   const { authUser } = useAuth();
   
@@ -74,6 +93,11 @@ export const MessageProvider = ({ children }: { children: React.ReactNode }) => 
 
   } = useUser();
   
+
+  const userIdsKey = users
+  .map((user) => String(user._id))
+  .sort()
+  .join(",");
   
   const selectedUserRef = useRef(selectedUser);
 
@@ -85,32 +109,61 @@ export const MessageProvider = ({ children }: { children: React.ReactNode }) => 
   // FOR PUSHER AND REALTIME MESSAGES
   useEffect(() => {
   if (!authUser || users.length === 0) return;
+  // if (!authUser || !userIdsKey) return;
 
-  const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
-    cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
-  });
+  // const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
+  //   cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
+  // });
+
+  const pusher = new Pusher(
+  process.env.NEXT_PUBLIC_PUSHER_KEY!,
+    {
+      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
+      channelAuthorization: {
+        endpoint: "/api/pusher/auth",
+        transport: "ajax",
+        headersProvider: () => ({
+          Authorization: `Bearer ${localStorage.getItem("token") ?? ""}`,
+        }),
+      },
+    }
+  );
+
+
+  pusherRef.current = pusher;
+  setPusherReady(true);
+  
 
   const channels: Pusher.Channel[] = [];
 
-  users.forEach((user) => {
-    const chatId =
-      authUser._id < user._id
-        ? `${authUser._id}-${user._id}`
-        : `${user._id}-${authUser._id}`;
+
+  const userIds = userIdsKey ? userIdsKey.split(",") : [];
+
+  // users.forEach((user) => {
+  //   const chatId =
+  //     authUser._id < user._id
+  //       ? `${authUser._id}-${user._id}`
+  //       : `${user._id}-${authUser._id}`;
+
+  userIds.forEach((userId) => {
+  const chatId =
+    String(authUser._id) < userId
+      ? `${authUser._id}-${userId}`
+      : `${userId}-${authUser._id}`;
 
     const channel = pusher.subscribe(`chat-${chatId}`);
 
     channels.push(channel);
 
+    
     channel.bind("new-message", (newMessage: Message) => {
-      // ==========================================================
-      // UPDATE SIDEBAR
-      // ==========================================================
+      const currentUserId = String(authUser._id);
+      const senderId = String(newMessage.senderId);
+      const receiverId = String(newMessage.receiverId);
 
+      // 1. Update the sidebar's latest message.
       const otherUserId =
-        newMessage.senderId === authUser._id
-          ? newMessage.receiverId
-          : newMessage.senderId;
+        senderId === currentUserId ? receiverId : senderId;
 
       updateUserLastMessage(otherUserId, {
         _id: newMessage._id,
@@ -126,36 +179,110 @@ export const MessageProvider = ({ children }: { children: React.ReactNode }) => 
         seenBy: newMessage.seenBy?.map(String) ?? [],
       });
 
+
+
+
+      
       // ==========================================================
       // UPDATE CURRENT CHAT
       // ==========================================================
 
       const currentSelectedUser = selectedUserRef.current;
 
-      const isIncomingMessage =
-        String(newMessage.receiverId) === String(authUser._id);
+        // const currentUserId = String(authUser._id);
+        // const senderId = String(newMessage.senderId);
+        // const receiverId = String(newMessage.receiverId);
 
-      const isCurrentConversationOpen =
-        String(currentSelectedUser?._id) === String(newMessage.senderId);
+        const selectedUserId = String(
+          currentSelectedUser?._id ?? ""
+        );
 
-      if (isIncomingMessage && isCurrentConversationOpen) {
-        void markMessagesAsSeen(newMessage.senderId);
-      }
+        const isIncomingMessage = receiverId === currentUserId;
+
+        const isFromSelectedUser = senderId === selectedUserId;
+
+        const belongsToCurrentConversation =
+          senderId === selectedUserId ||
+          receiverId === selectedUserId;
+
+        // Add the message to the open conversation.
+        if (belongsToCurrentConversation) {
+          setMessages((prev) => {
+            if (
+              prev.some(
+                (msg) =>
+                  String(msg._id) === String(newMessage._id)
+              )
+            ) {
+              return prev;
+            }
+
+            return [...prev, newMessage];
+          });
+        }
+
+        // Automatically mark incoming messages as seen
+        // while this conversation is open and the tab is visible.
+        if (
+          isIncomingMessage &&
+          isFromSelectedUser &&
+          document.visibilityState === "visible"
+        ) {
+          void markMessagesAsSeen(senderId);
+        }
 
 
-      if (
-        currentSelectedUser?._id === newMessage.senderId ||
-        currentSelectedUser?._id === newMessage.receiverId
-      ) {
-        setMessages((prev) => {
-          if (prev.some((msg) => msg._id === newMessage._id)) {
-            return prev;
-          }
+      // 2. Check whether this message belongs in the open conversation.
+      // const currentSelectedUser = selectedUserRef.current;
+      // const selectedUserId = String(currentSelectedUser?._id ?? "");
 
-          return [...prev, newMessage];
-        });
-      }
+      // const isCurrentConversationOpen =
+      //   selectedUserId !== "" &&
+      //   (senderId === selectedUserId || receiverId === selectedUserId);
+
+      // // 3. Add the message to the current conversation without duplicates.
+      // if (isCurrentConversationOpen) {
+      //   setMessages((prev) => {
+      //     if (prev.some((msg) => String(msg._id) === String(newMessage._id))) {
+      //       return prev;
+      //     }
+
+      //     return [...prev, newMessage];
+      //   });
+      // }
+
+      // // 4. If an incoming message arrives from the open chat,
+      // // mark that conversation's messages as seen.
+      // const isIncomingMessage = receiverId === currentUserId;
+      // const isFromSelectedUser = senderId === selectedUserId;
+
+      // if (isIncomingMessage && isFromSelectedUser) {
+      //   void markMessagesAsSeen(senderId);
+      // }
+
+      
+      
     });
+
+
+
+    // This is for consistent showing if user is viewing the chat wheather interacting or not 
+    // channel.bind(
+    //   "chat-viewing-status",
+    //   (data: {
+    //     userId: string;
+    //     isViewing: boolean;
+    //     updatedAt: number;
+    //   }) => {
+    //     setViewingUsers((prev) => ({
+    //       ...prev,
+    //       [String(data.userId)]: {
+    //         isViewing: data.isViewing,
+    //         updatedAt: data.updatedAt,
+    //       },
+    //     }));
+    //   }
+    // );
 
 
     // Pusher bind for realtime message read
@@ -222,9 +349,222 @@ export const MessageProvider = ({ children }: { children: React.ReactNode }) => 
       channel.unsubscribe();
     });
 
+    if (pusherRef.current === pusher) {
+      pusherRef.current = null;
+      setPusherReady(false);
+    }
+
     pusher.disconnect();
+
   };
-}, [authUser, users]);
+}, [authUser?._id, userIdsKey]);
+// }, [authUser, users]);
+
+
+
+useEffect(() => {
+  if (!pusherReady || !authUser?._id || !selectedUser?._id || !pusherRef.current) {
+    return;
+  }
+
+  const currentUserId = String(authUser._id);
+  const selectedUserId = String(selectedUser._id);
+
+  const chatId =
+    currentUserId < selectedUserId
+      ? `${currentUserId}-${selectedUserId}`
+      : `${selectedUserId}-${currentUserId}`;
+
+  const channelName = `presence-chat-${chatId}`;
+  // const channel = pusherRef.current.subscribe(channelName);
+  const channel = pusherRef.current.subscribe(channelName) as PresenceChannel;
+
+  // When subscription succeeds, check whether the other user
+  // is already connected to this conversation.
+  const handleSubscription = () => {
+    console.log("Presence channel connected:", channelName);
+
+    const otherUserIsPresent = channel.members.get(selectedUserId);
+
+    console.log("Other user already connected:", Boolean(otherUserIsPresent));
+
+    if (otherUserIsPresent) {
+      void markMessagesAsSeen(selectedUserId);
+    }
+  };
+  // const handleSubscription = () => {
+  //   console.log("Presence channel connected:", channelName);
+
+  //   console.log(
+  //     "Current members:",
+  //     channel.members.me?.id,
+  //     channel.members.count
+  //   );
+
+  //   const otherUserIsPresent = channel.members.get(selectedUserId);
+
+  //   console.log(
+  //     "Other user already connected:",
+  //     Boolean(otherUserIsPresent)
+  //   );
+
+  //   // This user has opened the conversation, so mark
+  //   // their incoming messages as seen even after a refresh.
+  //   void markMessagesAsSeen(selectedUserId);
+  // };
+
+  // Someone joins this conversation.
+  const handleMemberAdded = (member: { id: string; info: unknown }) => {
+    console.log("USER CONNECTED:", {
+      userId: member.id,
+      connectedAt: new Date().toLocaleTimeString(),
+    });
+
+    if (String(member.id) === selectedUserId) {
+      // Both users are now connected to this conversation.
+      void markMessagesAsSeen(selectedUserId);
+    }
+  };
+
+  // Someone leaves this conversation.
+  const handleMemberRemoved = (member: { id: string; info: unknown }) => {
+    console.log("USER DISCONNECTED:", {
+      userId: member.id,
+      disconnectedAt: new Date().toLocaleTimeString(),
+    });
+  };
+
+  channel.bind("pusher:subscription_succeeded", handleSubscription);
+  channel.bind("pusher:member_added", handleMemberAdded);
+  channel.bind("pusher:member_removed", handleMemberRemoved);
+
+  return () => {
+    channel.unbind("pusher:subscription_succeeded", handleSubscription);
+    channel.unbind("pusher:member_added", handleMemberAdded);
+    channel.unbind("pusher:member_removed", handleMemberRemoved);
+
+    pusherRef.current?.unsubscribe(channelName);
+  };
+}, [pusherReady, authUser?._id, selectedUser?._id]);
+
+
+
+// useEffect(() => {
+//   const pusher = pusherRef.current;
+
+//   if (!pusher || !authUser?._id || !selectedUser?._id) return;
+
+//   const currentUserId = String(authUser._id);
+//   const selectedUserId = String(selectedUser._id);
+
+//   const chatId =
+//     currentUserId < selectedUserId
+//       ? `${currentUserId}-${selectedUserId}`
+//       : `${selectedUserId}-${currentUserId}`;
+
+//   const presenceChannelName = `presence-chat-${chatId}`;
+//   const presenceChannel = pusher.subscribe(presenceChannelName);
+
+//   let subscribed = false;
+
+//   const publishViewingStatus = async (isViewing: boolean) => {
+//     try {
+//       await fetch(`/api/messages/viewing/${selectedUserId}`, {
+//         method: "POST",
+//         headers: { "Content-Type": "application/json" },
+//         credentials: "same-origin",
+//         body: JSON.stringify({ isViewing }),
+//         keepalive: !isViewing,
+//       });
+//     } catch (error) {
+//       console.error("Failed to publish viewing status:", error);
+//     }
+//   };
+
+//   const updateViewing = () => {
+//     if (!subscribed) return;
+
+//     const isViewing = document.visibilityState === "visible";
+//     void publishViewingStatus(isViewing);
+//   };
+
+//   const handleSubscribed = () => {
+//     subscribed = true;
+//     updateViewing();
+//   };
+
+//   presenceChannel.bind(
+//     "pusher:subscription_succeeded",
+//     handleSubscribed
+//   );
+
+//   const handleVisibilityChange = () => {
+//     updateViewing();
+//   };
+
+//   document.addEventListener("visibilitychange", handleVisibilityChange);
+
+//   // Refresh the viewing status periodically while this chat is visible.
+//   const heartbeat = window.setInterval(() => {
+//     if (document.visibilityState === "visible") {
+//       void publishViewingStatus(true);
+//     }
+//   }, 10000);
+
+//   return () => {
+//     document.removeEventListener(
+//       "visibilitychange",
+//       handleVisibilityChange
+//     );
+
+//     window.clearInterval(heartbeat);
+
+//     // Notify the other user before leaving this conversation.
+//     if (subscribed) {
+//       void publishViewingStatus(false);
+//     }
+
+//     presenceChannel.unbind(
+//       "pusher:subscription_succeeded",
+//       handleSubscribed
+//     );
+
+//     pusher.unsubscribe(presenceChannelName);
+//   };
+// }, [authUser?._id, selectedUser?._id, userIdsKey]);
+
+
+
+// // Expiration effect
+// useEffect(() => {
+//   const timer = window.setInterval(() => {
+//     const now = Date.now();
+
+//     setViewingUsers((prev) => {
+//       let changed = false;
+//       const next = { ...prev };
+
+//       for (const [userId, status] of Object.entries(prev)) {
+//         if (
+//           status.isViewing &&
+//           now - status.updatedAt > 30000
+//         ) {
+//           next[userId] = {
+//             ...status,
+//             isViewing: false,
+//           };
+
+//           changed = true;
+//         }
+//       }
+
+//       return changed ? next : prev;
+//     });
+//   }, 5000);
+
+//   return () => window.clearInterval(timer);
+// }, []);
+
 
 
 
@@ -475,36 +815,6 @@ const deleteMessage = async (
 };
 
 
-// const deleteMessage = async (messageId: string, receiverId: string, deleteForEveryone = false) => {
-
-//     try {
-//       await deleteMessageApi(messageId, receiverId, deleteForEveryone);
-
-//       if (deleteForEveryone) {
-//         setMessages((prev) =>
-//           prev.map((m) =>
-//             m._id === messageId ? { 
-//               ...m, text: "🛇 This message was deleted",
-//                fileUrl: undefined, 
-//                fileType: undefined, 
-//                fileName: undefined, 
-//                replyTo: undefined, 
-//               } : m
-//           )
-//         );
-//       } else {
-//         setMessages((prev) => prev.filter((m) => m._id !== messageId));
-//       }
-
-//       toast.success(deleteForEveryone ? "Deleted for everyone" : "Deleted for you");
-      
-//     } catch (err) {
-//         toast.error(getErrorMessage(err, "Failed to delete message"));
-
-//     }
-//   };
-
-
 // For Clearing Chat
 const clearChat = async (userId: string) => {  
  
@@ -521,6 +831,7 @@ const clearChat = async (userId: string) => {
 
 };
 
+
 // For Forwarding Messages
 const forwardMessage = async (messageId: string, receiverId: string) => {
 
@@ -533,7 +844,6 @@ const forwardMessage = async (messageId: string, receiverId: string) => {
       
     } catch (err) {
         toast.error(getErrorMessage(err, "Failed to forward message"));
-
     }
   };
 
@@ -556,32 +866,6 @@ const forwardMessage = async (messageId: string, receiverId: string) => {
   };
 
 
-// For Mark As Seen 
-  // const markAsSeen = async ( receiverId: string ) => {  
-
-  //   try {
-  //     await markAsSeenApi(receiverId);
-
-  //     if(!authUser) return;
-  //     setMessages(prev =>
-  //       prev.map(m => {
-            
-  //         // ensure seenBy is an array and userId is added only once
-  //         const seenBy = m.seenBy ?? [];
-  //         // if (seenBy.includes(userId)) return m;
-  //         if (seenBy.includes(authUser?._id)) return m;
-
-  //         return { ...m, seenBy: [...seenBy, authUser?._id] };
-  //       })
-  //     );
-    
-  //   } catch (err) {
-  //       toast.error(getErrorMessage(err, "Failed to mark message as seen"));
-
-  //   }
-  // };
-
-
 
   return (
     <messageContext.Provider value={{ 
@@ -598,10 +882,9 @@ const forwardMessage = async (messageId: string, receiverId: string) => {
         forwardMessage,
         reactToMessage,
 
-        // markAsSeen,
         markMessagesAsSeen,
-        
 
+        viewingUsers,
     }}>
       {children}
     </messageContext.Provider>

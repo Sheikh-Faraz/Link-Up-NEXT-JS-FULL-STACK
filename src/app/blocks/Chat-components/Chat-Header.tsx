@@ -29,7 +29,7 @@ export default function ChatHeader() {
 
   // Contexts
   const { authUser } = useAuth();
-  const { clearChat } = useMessages();
+  const { clearChat, viewingUsers } = useMessages();
   const { chatOpen } = useUI();
   const { selectUser, selectedUser, blockUser, unblockUser, deleteUser} = useUser();
   
@@ -67,8 +67,19 @@ export default function ChatHeader() {
           alt={selectedUser?.fullName || "User Image"} 
           className="w-10 h-10 rounded-full" 
         />
-        <div>
+
+        <div className="flex">
           <h3 className="font-semibold">{selectedUser?.fullName || "User Name"}</h3>
+          
+          {/* <h3 className="text-xs text-white border border-red-600">
+            {selectedUser &&
+              viewingUsers[String(selectedUser._id)]?.isViewing && (
+                <p className="text-xs text-white">
+                  Viewing chat
+                </p>
+              )}
+           </h3>  */}
+
           {/* <p>There was online user comp here</p> */}
           {/* <p className={`text-sm ${onlineUsers.includes(selectedUser?._id || "") ? "text-green-600" : "text-red-600"}`}>
             {onlineUsers.includes(selectedUser?._id || "") ? "Online" : "Offline"}

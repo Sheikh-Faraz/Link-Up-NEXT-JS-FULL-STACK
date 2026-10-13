@@ -25,10 +25,6 @@ data: {
 }) => {
   return axiosInstance.post("/messages/send-message", data);
 };
-// export const sendMessageApi = (formData: FormData) => {
-//     const res = axiosInstance.post("/messages/send-message", formData);
-//     return  res;
-// };
 
 
 // 3. ✅ Done /  Tested
@@ -51,24 +47,25 @@ export const clearChatApi = (userId: string) => {
 
 // 6. ✅ Done /  Tested
 export const markMessagesAsSeenApi = (userId: string) => {
-  return axiosInstance.patch(`/messages/seen/${userId}`);
+    return axiosInstance.patch(`/messages/seen/${userId}`);
 };
 
 
-export const forwardMessageApi = (receiverId: string, messageId: string) => {
+// 7. ✅ Done /  Tested
+export const forwardMessageApi = (
+  messageId: string,
+  receiverIds: string[]
+) => {
+  return axiosInstance.post("/messages/forward", {
+    messageId,
+    receiverIds,
+  });
+};
 
-    const formData = new FormData();
-    formData.append("receiverId", receiverId);
-    formData.append("messageId", messageId);
-    // formData.append("fileName", fileName || "");
 
-    // if (file) formData.append("file", file);
-
-    return axiosInstance.post("/messages/forward", formData, {
-        headers: {
-            "Content-Type": "multipart/form-data",
-        },
-    });
+// 8. ✅ Done /  Tested
+export const getForwardHistoryApi = (messageId: string) => {
+  return axiosInstance.get(`/messages/forward-history/${messageId}`);
 };
 
 

@@ -18,8 +18,14 @@ export interface Message {
   fileUrl?: string;   // where file/image is stored
   fileType?: string;  // like "image/png" or "application/pdf"
 
-  // New
-  attachments?: Attachment[];
+  attachments?: Attachment[]; // For files like images, files, pdfs, audios etc
+
+  
+  // Forwarded message metadata
+  isForwarded?: boolean;
+  forwardedFrom?: string | null;
+  forwardedFromMessageId?: string | null;
+  forwardedBy?: string | null;
 };
 
 

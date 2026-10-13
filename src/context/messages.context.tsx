@@ -54,13 +54,17 @@ interface messageContextType {
     ) => Promise<void>;
 
     editMessage: (messageId: string, newText: string, receiverId: string) => Promise<void>;
-    forwardMessage: (messageId: string, receiverId: string) => Promise<void>;
     deleteMessage: (messageId: string, receiverId: string, forEveryone?: boolean) => Promise<void>;
-    reactToMessage: (messageId: string, emoji: string) => Promise<void>;
     clearChat: (userId: string) => Promise<void>;
+
+    reactToMessage: (messageId: string, emoji: string) => Promise<void>;
     
     markMessagesAsSeen: (userId: string) => Promise<void>;
-    // markAsSeen: (receiverId: string) => Promise<void>;
+    forwardMessage: (
+      messageId: string,
+      receiverIds: string[]
+    ) => Promise<void>;
+
 }
     
 const messageContext = createContext<messageContextType | undefined>(undefined);    
@@ -833,19 +837,61 @@ const clearChat = async (userId: string) => {
 
 
 // For Forwarding Messages
-const forwardMessage = async (messageId: string, receiverId: string) => {
 
-    try {
-      const res = await forwardMessageApi(messageId, receiverId);
+const forwardMessage = async (
+  messageId: string,
+  receiverIds: string[]
+): Promise<void> => {
+  try {
+    const res = await forwardMessageApi(messageId, receiverIds);
 
-      const newMsg = res.data;
-      setMessages((prev) => [...prev, newMsg]);
-      toast.success("Message forwarded");
+    const forwardedMessages: Message[] = res.data.messages ?? [];
+
+    // Update sidebar previews for each recipient.
+    // Do NOT append these copies to the currently open chat.
+    forwardedMessages.forEach((message) => {
+      const recipientId = String(message.receiverId);
+
+      updateUserLastMessage(recipientId, {
+        _id: message._id,
+        senderId: String(message.senderId),
+        receiverId: recipientId,
+        text: message.text,
+        fileName: message.attachments?.[0]?.fileName,
+        fileType: message.attachments?.[0]?.fileType ?? message.fileType,
+        attachments: message.attachments?.map((file) => ({
+          fileName: file.fileName,
+          fileType: file.fileType,
+        })),
+        createdAt: message.createdAt,
+        seenBy: [],
+      });
+    });
+
+    toast.success(
+      forwardedMessages.length === 1
+        ? "Message forwarded"
+        : `Message forwarded to ${forwardedMessages.length} people`
+    );
+  } catch (err) {
+    toast.error(getErrorMessage(err, "Failed to forward message"));
+    throw err;
+  }
+};
+
+// const forwardMessage = async (messageId: string, receiverId: string) => {
+
+//     try {
+//       const res = await forwardMessageApi(messageId, receiverId);
+
+//       const newMsg = res.data;
+//       setMessages((prev) => [...prev, newMsg]);
+//       toast.success("Message forwarded");
       
-    } catch (err) {
-        toast.error(getErrorMessage(err, "Failed to forward message"));
-    }
-  };
+//     } catch (err) {
+//         toast.error(getErrorMessage(err, "Failed to forward message"));
+//     }
+//   };
 
 
 // For reacting to Messages

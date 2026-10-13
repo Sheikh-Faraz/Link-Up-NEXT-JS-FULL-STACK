@@ -23,8 +23,21 @@ export async function DELETE(
         { status: 404 }
       );
     }
-
+    
     const currentUserId = currentUser._id.toString();
+
+
+    
+    const isParticipant =
+      message.senderId.toString() === currentUserId ||
+      message.receiverId.toString() === currentUserId;
+
+    if (!isParticipant) {
+      return NextResponse.json(
+        { message: "You cannot delete this message" },
+        { status: 403 }
+      );
+    };
 
     // ==========================================================
     // DELETE FOR EVERYONE
@@ -34,12 +47,12 @@ export async function DELETE(
       // If you want only the sender to be able to use
       // "Delete for Everyone", uncomment this.
       //
-      // if (message.senderId.toString() !== currentUserId) {
-      //   return NextResponse.json(
-      //     { message: "Only sender can delete for everyone" },
-      //     { status: 403 }
-      //   );
-      // }
+      if (message.senderId.toString() !== currentUserId) {
+        return NextResponse.json(
+          { message: "Only sender can delete for everyone" },
+          { status: 403 }
+        );
+      }
 
       // Delete every Cloudinary file associated with message
       await deleteMessageFiles(message);

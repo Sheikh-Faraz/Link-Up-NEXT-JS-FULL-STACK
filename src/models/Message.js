@@ -87,10 +87,36 @@ const messageSchema = new mongoose.Schema(
     isEdited: { type: Boolean, default: false },
 
     isDeletedFor: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    
+    // For Forwarding Message
+    forwardedFrom: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
 
-    // Forward / Reply
-    forwardedFrom: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-  
+    // The original message from which this forwarding chain started
+    forwardedFromMessageId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Message",
+      default: null,
+    },
+
+    // The user who forwarded this particular copy
+    forwardedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+
+    // To show that it was forwarded
+    isForwarded: {
+      type: Boolean,
+      default: false,
+    },
+
+
+    // For Replying
     replyTo: [
       {
         text: String,

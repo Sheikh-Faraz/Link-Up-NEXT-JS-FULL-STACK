@@ -8,6 +8,9 @@ import { useAuth } from "@/context/auth.context";
 import { useMessages } from "@/context/messages.context";
 import { useUI } from "@/context/ui.context";
 
+// Services
+import { getForwardHistoryApi } from "@/services/message.service";
+
 // Skeletons
 import MessageSkeleton from "../Skeletons/MessageSkeleton";
 
@@ -32,7 +35,6 @@ import {
   MessageSquareText, 
   CornerUpLeft, 
   Copy, 
-  // Paperclip,
   Play,
   Volume2,
   Download,
@@ -40,9 +42,13 @@ import {
   ChevronRight,
   FileText,
   X,
+  Search,
+  Forward,
+  History,
 
   Check,
   CheckCheck,
+  // Paperclip,
   // Image as ImageIcon,
   // Video,
   // Music,
@@ -51,6 +57,17 @@ import {
 
 // For Audio
 import AudioMessage from "@/app/blocks/AudioMessage";
+
+// Type
+type ForwardHistoryEntry = {
+  _id: string;
+  recipientId?: {
+    _id: string;
+    fullName: string;
+    profilePic?: string;
+  } | null;
+  forwardedAt: string;
+};
 
 
 // This is the dropdown the opens for functions like (Reply, Copy, Edit, Delete) based wheather the message is own or not
@@ -61,6 +78,9 @@ function MessageDropdown({
   setOpenEdit,
   setOpenDelete,
   selectReply,
+
+  setOpenForward,
+  setOpenForwardHistory,
 }: {
   isOwn: boolean;
   msg: {
@@ -76,6 +96,9 @@ function MessageDropdown({
   setOpenEdit: (open: boolean) => void;
   setOpenDelete: (open: boolean) => void;
   selectReply: (msg: { text?: string; fileUrl?: string; fileType?: string; fileName?: string }) => void;
+
+  setOpenForward: (open: boolean) => void;
+  setOpenForwardHistory: (open: boolean) => void;
 }) {
   return (
     <DropdownMenu>
@@ -128,6 +151,27 @@ function MessageDropdown({
                 Copy
               </DropdownMenuItem>
             )}
+
+
+            
+            <DropdownMenuItem
+              className="cursor-pointer focus:bg-muted"
+              onClick={() => setOpenForward(true)}
+            >
+              <Forward className="h-4 w-4 mr-2" />
+              Forward
+            </DropdownMenuItem>
+
+            {isOwn && (
+              <DropdownMenuItem
+                className="cursor-pointer focus:bg-muted"
+                onClick={() => setOpenForwardHistory(true)}
+              >
+                <History className="mr-2 h-4 w-4" />
+                Forward details
+              </DropdownMenuItem>
+            )}
+
 
 
             {/* Allow to edit the message if it is text and own, also opens edit dialog*/}
@@ -464,128 +508,6 @@ function MediaCarousel({
     </div>
   );
 }
-// function MediaCarousel({
-//   attachments,
-//   initialIndex = 0,
-//   onClose,
-// }: {
-//   attachments: {
-//     fileName: string;
-//     fileUrl: string;
-//     fileType?: string;
-//     fileSize?: number;
-//   }[];
-//   initialIndex?: number;
-//   onClose: () => void;
-// }) {
-//   const [currentIndex, setCurrentIndex] = useState(initialIndex);
-
-//   const current = attachments[currentIndex];
-
-//   const goPrevious = () => {
-//     setCurrentIndex((prev) =>
-//       prev === 0 ? attachments.length - 1 : prev - 1
-//     );
-//   };
-
-//   const goNext = () => {
-//     setCurrentIndex((prev) =>
-//       prev === attachments.length - 1 ? 0 : prev + 1
-//     );
-//   };
-
-//   useEffect(() => {
-//     const handleKeyDown = (e: KeyboardEvent) => {
-//       if (e.key === "Escape") {
-//         onClose();
-//       }
-
-//       if (e.key === "ArrowLeft") {
-//         goPrevious();
-//       }
-
-//       if (e.key === "ArrowRight") {
-//         goNext();
-//       }
-//     };
-
-//     document.addEventListener("keydown", handleKeyDown);
-
-//     return () => {
-//       document.removeEventListener("keydown", handleKeyDown);
-//     };
-//   }, [onClose]);
-
-//   return (
-//     <div
-//       className="fixed inset-0 z-100 bg-black/90 flex items-center justify-center"
-//       onClick={onClose}
-//     >
-//       {/* Close */}
-//       <button
-//         onClick={onClose}
-//         className="absolute top-5 right-5 z-20 p-2 rounded-full bg-black/50 text-white hover:bg-black/70"
-//       >
-//         <X className="size-6" />
-//       </button>
-
-//       {/* Previous */}
-//       {attachments.length > 1 && (
-//         <button
-//           onClick={(e) => {
-//             e.stopPropagation();
-//             goPrevious();
-//           }}
-//           className="absolute left-4 md:left-8 z-20 p-2 rounded-full bg-black/50 text-white hover:bg-black/70"
-//         >
-//           <ChevronLeft className="size-7" />
-//         </button>
-//       )}
-
-//       {/* Content */}
-//       <div
-//         className="max-w-[90vw] max-h-[90vh] flex items-center justify-center"
-//         onClick={(e) => e.stopPropagation()}
-//       >
-//         {current.fileType?.startsWith("image/") ? (
-//           <img
-//             src={current.fileUrl}
-//             alt={current.fileName}
-//             className="max-w-[90vw] max-h-[85vh] object-contain rounded-md"
-//           />
-//         ) : current.fileType?.startsWith("video/") ? (
-//           <video
-//             key={current.fileUrl}
-//             src={current.fileUrl}
-//             controls
-//             autoPlay
-//             className="max-w-[90vw] max-h-[85vh] rounded-md"
-//           />
-//         ) : null}
-//       </div>
-
-//       {/* Next */}
-//       {attachments.length > 1 && (
-//         <button
-//           onClick={(e) => {
-//             e.stopPropagation();
-//             goNext();
-//           }}
-//           className="absolute right-4 md:right-8 z-20 p-2 rounded-full bg-black/50 text-white hover:bg-black/70"
-//         >
-//           <ChevronRight className="size-7" />
-//         </button>
-//       )}
-
-//       {/* Counter */}
-//       {attachments.length > 1 && (
-//         <div className="absolute bottom-5 left-1/2 -translate-x-1/2 bg-black/60 text-white text-sm px-3 py-1.5 rounded-full">
-//           {currentIndex + 1} / {attachments.length}
-//         </div>
-//       )}
-//     </div>
-//   );
-// }
 
 
 // This shows gird or corosuel based on the amount of images/videos send
@@ -1081,8 +1003,6 @@ function MessageBubble({
 
   msg: {
     text?: string;
-
-    // New
     attachments?: {
       fileName: string;
       fileUrl: string;
@@ -1100,6 +1020,12 @@ function MessageBubble({
     fileResourceType?: string;
 
     seenBy?: string[];
+
+    // For message forwarding
+    isForwarded?: boolean;
+    forwardedFrom?: string | null;
+    forwardedBy?: string | null;
+    forwardedFromMessageId?: string | null;
   };
 
    replyTo?: string | null;
@@ -1107,14 +1033,91 @@ function MessageBubble({
 }) {
 
     // Contexts
-    const { editMessage, deleteMessage } = useMessages();
+    const { editMessage, deleteMessage, forwardMessage } = useMessages();
     const { selectReply } = useUI();
-    const { selectedUser } = useUser();
+    const { selectedUser, users } = useUser();
 
     // States
     const [openEdit, setOpenEdit] = useState(false);
     const [openDelete, setOpenDelete] = useState(false);
     const [newText, setNewText] = useState(msg.text || "");
+
+    const [openForward, setOpenForward] = useState(false);
+    const [forwardSearch, setForwardSearch] = useState("");
+    const [selectedForwardIds, setSelectedForwardIds] = useState<string[]>([]);
+    const [isForwarding, setIsForwarding] = useState(false);
+   
+   
+    const [openForwardHistory, setOpenForwardHistory] = useState(false);
+    const [forwardHistory, setForwardHistory] = useState<ForwardHistoryEntry[]>([]);
+    const [isForwardHistoryLoading, setIsForwardHistoryLoading] = useState(false);
+
+
+  useEffect(() => {
+    if (!openForwardHistory) return;
+
+    let active = true;
+
+    const loadForwardHistory = async () => {
+      setIsForwardHistoryLoading(true);
+
+      try {
+        const res = await getForwardHistoryApi(id);
+
+        if (active) {
+          setForwardHistory(res.data.history ?? []);
+        }
+      } catch (error) {
+        if (active) {
+          setForwardHistory([]);
+          toast.error("Failed to load forwarding details.");
+        }
+      } finally {
+        if (active) {
+          setIsForwardHistoryLoading(false);
+        }
+      }
+    };
+
+    void loadForwardHistory();
+
+    return () => {
+      active = false;
+    };
+  }, [openForwardHistory, id]);
+
+    
+    const filteredForwardUsers = users.filter((user) =>
+      user.fullName
+        .toLowerCase()
+        .includes(forwardSearch.trim().toLowerCase())
+    );
+
+    const toggleForwardRecipient = (userId: string) => {
+      setSelectedForwardIds((prev) =>
+        prev.includes(userId)
+          ? prev.filter((id) => id !== userId)
+          : [...prev, userId]
+      );
+    };
+
+    const handleForward = async () => {
+      if (selectedForwardIds.length === 0 || isForwarding) return;
+
+      setIsForwarding(true);
+
+      try {
+        await forwardMessage(id, selectedForwardIds);
+
+        setOpenForward(false);
+        setSelectedForwardIds([]);
+        setForwardSearch("");
+      } catch {
+        // The context already displays the error toast.
+      } finally {
+        setIsForwarding(false);
+      }
+    };
 
     // To copy text to clipboard handler
     const handleCopy = async () => {
@@ -1155,6 +1158,9 @@ function MessageBubble({
             setOpenEdit={setOpenEdit}
             setOpenDelete={setOpenDelete}
             selectReply={selectReply}
+
+            setOpenForward={setOpenForward}
+            setOpenForwardHistory={setOpenForwardHistory}
           /> 
         }
       </div>
@@ -1165,6 +1171,14 @@ function MessageBubble({
       <Bubble {...(!isOwn && { variant: "muted" })}>
 
         <BubbleContent>
+
+          {/* {msg.isForwarded && ( */}
+          {msg.isForwarded && !(msg.text === "🛇 This message was deleted") && (
+            <div className="mb-2 flex items-center gap-2 text-xs italic text-muted-foreground">
+              <Forward className="size-3.5" />
+              Forwarded
+            </div>
+          )}
 
         {/* This is the reply preview showing for the message that was selected to reply to */}
         {Array.isArray(replyTo) && replyTo.length > 0 && (
@@ -1387,6 +1401,189 @@ function MessageBubble({
       </Dialog>
 
 
+
+      {/* Dialog to select users to forward message */}      
+      <Dialog
+        open={openForward}
+        onOpenChange={(open) => {
+          setOpenForward(open);
+
+          if (!open) {
+            setForwardSearch("");
+            setSelectedForwardIds([]);
+          }
+        }}
+      >
+        <DialogContent className="max-h-[85vh] overflow-hidden sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Forward message</DialogTitle>
+            <DialogDescription>
+              Select one or more contacts to forward this message to.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex items-center gap-2 rounded-md border px-3">
+            <Search className="size-4 shrink-0 text-muted-foreground" />
+
+            <input
+              value={forwardSearch}
+              onChange={(event) => setForwardSearch(event.target.value)}
+              placeholder="Search people..."
+              className="h-10 w-full bg-transparent text-sm outline-none"
+            />
+          </div>
+
+          {selectedForwardIds.length > 0 && (
+            <p className="text-sm text-muted-foreground">
+              {selectedForwardIds.length} selected
+            </p>
+          )}
+
+          <div className="max-h-[40vh] space-y-1 overflow-y-auto">
+            {filteredForwardUsers.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                No contacts found.
+              </p>
+            ) : (
+              filteredForwardUsers.map((user) => {
+                const selected = selectedForwardIds.includes(user._id);
+
+                return (
+                  <button
+                    key={user._id}
+                    type="button"
+                    onClick={() => toggleForwardRecipient(user._id)}
+                    className={`flex w-full items-center gap-3 rounded-lg p-3 text-left transition-colors ${
+                      selected
+                        ? "bg-[#6FD5AA]/20"
+                        : "hover:bg-muted"
+                    }`}
+                  >
+                    {user.profilePic ? (
+                      <img
+                        src={user.profilePic}
+                        alt=""
+                        className="size-10 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex size-10 items-center justify-center rounded-full bg-muted font-medium">
+                        {user.fullName.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+
+                    <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                      {user.fullName}
+                    </span>
+
+                    <span
+                      className={`flex size-5 items-center justify-center rounded-full border ${
+                        selected
+                          ? "border-[#6FD5AA] bg-[#6FD5AA] text-black"
+                          : "border-muted-foreground/40"
+                      }`}
+                    >
+                      {selected && <Check className="size-3" />}
+                    </span>
+                  </button>
+                );
+              })
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setOpenForward(false)}
+              disabled={isForwarding}
+            >
+              Cancel
+            </Button>
+
+            <Button
+              onClick={handleForward}
+              disabled={selectedForwardIds.length === 0 || isForwarding}
+              className="bg-[#6FD5AA] text-black hover:bg-[#5bc69a]"
+            >
+              {isForwarding
+                ? "Forwarding..."
+                : `Forward${selectedForwardIds.length > 0 ? ` (${selectedForwardIds.length})` : ""}`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+
+      {/* Details of forward message */}      
+      <Dialog
+        open={openForwardHistory}
+        onOpenChange={setOpenForwardHistory}
+      >
+        <DialogContent className="max-h-[80vh] overflow-hidden sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Forward details</DialogTitle>
+            <DialogDescription>
+              Contacts you forwarded this message to.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="max-h-[50vh] space-y-2 overflow-y-auto">
+            {isForwardHistoryLoading ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                Loading forwarding details...
+              </p>
+            ) : forwardHistory.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                No forwarding history found for this message.
+              </p>
+            ) : (
+              forwardHistory.map((entry) => (
+                <div
+                  key={entry._id}
+                  className="flex items-center gap-3 rounded-lg p-3 hover:bg-muted"
+                >
+                  {entry.recipientId?.profilePic ? (
+                    <img
+                      src={entry.recipientId.profilePic}
+                      alt=""
+                      className="size-10 shrink-0 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted font-medium">
+                      {entry.recipientId?.fullName
+                        ?.charAt(0)
+                        .toUpperCase() || "?"}
+                    </div>
+                  )}
+
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">
+                      {entry.recipientId?.fullName || "Unavailable user"}
+                    </p>
+
+                    <p className="text-xs text-muted-foreground">
+                      Forwarded{" "}
+                      {new Date(entry.forwardedAt).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setOpenForwardHistory(false)}
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+
+
+
       {/* If the message is NOT own then show and pass this version of message actions dropdown */}
       <div className="my-auto ml-2">
         {!isOwn && 
@@ -1397,6 +1594,9 @@ function MessageBubble({
             setOpenEdit={setOpenEdit}
             setOpenDelete={setOpenDelete}
             selectReply={selectReply}
+
+            setOpenForward={setOpenForward}
+            setOpenForwardHistory={setOpenForwardHistory}
           />
         }
       </div> 

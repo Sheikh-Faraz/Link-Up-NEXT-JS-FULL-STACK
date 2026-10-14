@@ -103,11 +103,66 @@ export const MessageProvider = ({ children }: { children: React.ReactNode }) => 
   .sort()
   .join(",");
   
+  
+  
   const selectedUserRef = useRef(selectedUser);
 
   useEffect(() => {
     selectedUserRef.current = selectedUser;
   }, [selectedUser]);
+
+
+  
+const usersRef = useRef(users);
+
+useEffect(() => {
+  usersRef.current = users;
+}, [users]);
+
+  
+// Update the sidebar only when the changed message is
+  // currently the latest message for that conversation.
+  const updateSidebarIfLatest = (
+    message: Message,
+    deleted = false
+  ) => {
+    const currentUserId = String(authUser?._id ?? "");
+    const senderId = String(message.senderId);
+    const receiverId = String(message.receiverId);
+
+    const otherUserId =
+      senderId === currentUserId ? receiverId : senderId;
+
+    const lastMessage = usersRef.current.find(
+      (user) => String(user._id) === otherUserId
+    )?.lastMessage;
+
+    if (
+      !lastMessage ||
+      String(lastMessage._id) !== String(message._id)
+    ) {
+      return;
+    }
+
+    updateUserLastMessage(otherUserId, {
+      _id: String(message._id),
+      senderId,
+      receiverId,
+      text: deleted
+        ? "🛇 This message was deleted"
+        : message.text,
+      fileType: deleted ? undefined : message.fileType,
+      attachments: deleted
+        ? []
+        : message.attachments?.map((attachment) => ({
+            fileName: attachment.fileName,
+            fileType: attachment.fileType,
+          })),
+      createdAt: message.createdAt,
+      seenBy: deleted ? [] : message.seenBy?.map(String) ?? [],
+    });
+  };
+
 
 
   // FOR PUSHER AND REALTIME MESSAGES
@@ -235,58 +290,53 @@ export const MessageProvider = ({ children }: { children: React.ReactNode }) => 
           void markMessagesAsSeen(senderId);
         }
 
-
-      // 2. Check whether this message belongs in the open conversation.
-      // const currentSelectedUser = selectedUserRef.current;
-      // const selectedUserId = String(currentSelectedUser?._id ?? "");
-
-      // const isCurrentConversationOpen =
-      //   selectedUserId !== "" &&
-      //   (senderId === selectedUserId || receiverId === selectedUserId);
-
-      // // 3. Add the message to the current conversation without duplicates.
-      // if (isCurrentConversationOpen) {
-      //   setMessages((prev) => {
-      //     if (prev.some((msg) => String(msg._id) === String(newMessage._id))) {
-      //       return prev;
-      //     }
-
-      //     return [...prev, newMessage];
-      //   });
-      // }
-
-      // // 4. If an incoming message arrives from the open chat,
-      // // mark that conversation's messages as seen.
-      // const isIncomingMessage = receiverId === currentUserId;
-      // const isFromSelectedUser = senderId === selectedUserId;
-
-      // if (isIncomingMessage && isFromSelectedUser) {
-      //   void markMessagesAsSeen(senderId);
-      // }
-
-      
-      
     });
 
+    
+    channel.bind(
+      "message-edited",
+      (data: { updatedMessage: Message }) => {
+        const updatedMessage = data.updatedMessage;
 
+        setMessages((prev) =>
+          prev.map((message) =>
+            String(message._id) === String(updatedMessage._id)
+              ? updatedMessage
+              : message
+          )
+        );
 
-    // This is for consistent showing if user is viewing the chat wheather interacting or not 
-    // channel.bind(
-    //   "chat-viewing-status",
-    //   (data: {
-    //     userId: string;
-    //     isViewing: boolean;
-    //     updatedAt: number;
-    //   }) => {
-    //     setViewingUsers((prev) => ({
-    //       ...prev,
-    //       [String(data.userId)]: {
-    //         isViewing: data.isViewing,
-    //         updatedAt: data.updatedAt,
-    //       },
-    //     }));
-    //   }
-    // );
+        updateSidebarIfLatest(updatedMessage);
+      }
+    );
+
+    channel.bind(
+      "message-deleted",
+      (data: {
+        messageId: string;
+        updatedMessage: Message;
+      }) => {
+        const deletedMessage: Message = {
+          ...data.updatedMessage,
+          text: "🛇 This message was deleted",
+          fileUrl: undefined,
+          fileType: undefined,
+          attachments: [],
+          replyTo: undefined,
+        };
+
+        setMessages((prev) =>
+          prev.map((message) =>
+            String(message._id) === String(data.messageId)
+              ? deletedMessage
+              : message
+          )
+        );
+
+        updateSidebarIfLatest(deletedMessage, true);
+      }
+    );
+
 
 
     // Pusher bind for realtime message read
@@ -396,26 +446,6 @@ useEffect(() => {
       void markMessagesAsSeen(selectedUserId);
     }
   };
-  // const handleSubscription = () => {
-  //   console.log("Presence channel connected:", channelName);
-
-  //   console.log(
-  //     "Current members:",
-  //     channel.members.me?.id,
-  //     channel.members.count
-  //   );
-
-  //   const otherUserIsPresent = channel.members.get(selectedUserId);
-
-  //   console.log(
-  //     "Other user already connected:",
-  //     Boolean(otherUserIsPresent)
-  //   );
-
-  //   // This user has opened the conversation, so mark
-  //   // their incoming messages as seen even after a refresh.
-  //   void markMessagesAsSeen(selectedUserId);
-  // };
 
   // Someone joins this conversation.
   const handleMemberAdded = (member: { id: string; info: unknown }) => {
@@ -450,125 +480,6 @@ useEffect(() => {
     pusherRef.current?.unsubscribe(channelName);
   };
 }, [pusherReady, authUser?._id, selectedUser?._id]);
-
-
-
-// useEffect(() => {
-//   const pusher = pusherRef.current;
-
-//   if (!pusher || !authUser?._id || !selectedUser?._id) return;
-
-//   const currentUserId = String(authUser._id);
-//   const selectedUserId = String(selectedUser._id);
-
-//   const chatId =
-//     currentUserId < selectedUserId
-//       ? `${currentUserId}-${selectedUserId}`
-//       : `${selectedUserId}-${currentUserId}`;
-
-//   const presenceChannelName = `presence-chat-${chatId}`;
-//   const presenceChannel = pusher.subscribe(presenceChannelName);
-
-//   let subscribed = false;
-
-//   const publishViewingStatus = async (isViewing: boolean) => {
-//     try {
-//       await fetch(`/api/messages/viewing/${selectedUserId}`, {
-//         method: "POST",
-//         headers: { "Content-Type": "application/json" },
-//         credentials: "same-origin",
-//         body: JSON.stringify({ isViewing }),
-//         keepalive: !isViewing,
-//       });
-//     } catch (error) {
-//       console.error("Failed to publish viewing status:", error);
-//     }
-//   };
-
-//   const updateViewing = () => {
-//     if (!subscribed) return;
-
-//     const isViewing = document.visibilityState === "visible";
-//     void publishViewingStatus(isViewing);
-//   };
-
-//   const handleSubscribed = () => {
-//     subscribed = true;
-//     updateViewing();
-//   };
-
-//   presenceChannel.bind(
-//     "pusher:subscription_succeeded",
-//     handleSubscribed
-//   );
-
-//   const handleVisibilityChange = () => {
-//     updateViewing();
-//   };
-
-//   document.addEventListener("visibilitychange", handleVisibilityChange);
-
-//   // Refresh the viewing status periodically while this chat is visible.
-//   const heartbeat = window.setInterval(() => {
-//     if (document.visibilityState === "visible") {
-//       void publishViewingStatus(true);
-//     }
-//   }, 10000);
-
-//   return () => {
-//     document.removeEventListener(
-//       "visibilitychange",
-//       handleVisibilityChange
-//     );
-
-//     window.clearInterval(heartbeat);
-
-//     // Notify the other user before leaving this conversation.
-//     if (subscribed) {
-//       void publishViewingStatus(false);
-//     }
-
-//     presenceChannel.unbind(
-//       "pusher:subscription_succeeded",
-//       handleSubscribed
-//     );
-
-//     pusher.unsubscribe(presenceChannelName);
-//   };
-// }, [authUser?._id, selectedUser?._id, userIdsKey]);
-
-
-
-// // Expiration effect
-// useEffect(() => {
-//   const timer = window.setInterval(() => {
-//     const now = Date.now();
-
-//     setViewingUsers((prev) => {
-//       let changed = false;
-//       const next = { ...prev };
-
-//       for (const [userId, status] of Object.entries(prev)) {
-//         if (
-//           status.isViewing &&
-//           now - status.updatedAt > 30000
-//         ) {
-//           next[userId] = {
-//             ...status,
-//             isViewing: false,
-//           };
-
-//           changed = true;
-//         }
-//       }
-
-//       return changed ? next : prev;
-//     });
-//   }, 5000);
-
-//   return () => window.clearInterval(timer);
-// }, []);
-
 
 
 
@@ -699,39 +610,6 @@ const editMessage = async (messageId: string, newText: string, receiverId: strin
   }};
 
 
-
-
-  // For marking messages as seen 
-  // const markMessagesAsSeen = async (userId: string) => {
-  //   try {
-  //     await markMessagesAsSeenApi(userId);
-
-  //     // Update local messages state so the UI reflects the seen status.
-  //     setMessages((prevMessages) =>
-  //       prevMessages.map((msg) => {
-  //         // Only update messages received from the selected user.
-  //         if (String(msg.senderId) === String(userId)) {
-  //           return {
-  //             ...msg,
-  //             seenBy: Array.from(
-  //               new Set([
-  //                 ...(msg.seenBy || []).map(String),
-  //                 String(authUser?._id),
-  //               ])
-  //             ),
-  //           };
-  //         }
-
-  //         return msg;
-  //       })
-  //     );
-  //   } catch (err) {
-  //     console.error("Failed to mark messages as seen:", err);
-  //   }
-  // };
-
-
-
 // For Deleting Message
 const deleteMessage = async (
   messageId: string,
@@ -774,11 +652,14 @@ const deleteMessage = async (
           (m) => m._id === messageId
         );
 
-        updateSidebarAfterDelete(
-          receiverId,
-          updatedMessages,
-          deletedMessage
-        );
+        // updateSidebarAfterDelete(
+        //   receiverId,
+        //   updatedMessages,
+        //   deletedMessage
+        // );
+        if (deletedMessage) {
+          updateSidebarIfLatest(deletedMessage, true);
+        }
 
         return updatedMessages;
       });

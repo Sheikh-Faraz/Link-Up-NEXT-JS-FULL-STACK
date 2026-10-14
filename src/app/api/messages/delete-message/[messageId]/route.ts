@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+
 import Message from "@/models/Message";
+
 import { getCurrentUser } from "@/lib/getCurrentUser";
 import { deleteMessageFiles } from "@/lib/deleteMessageFiles";
+
+import { pusher } from "@/lib/pusher";
+
 
 export async function DELETE(
   req: NextRequest,
@@ -82,6 +87,23 @@ export async function DELETE(
         { new: true }
       );
 
+
+      // Trigger a Pusher event to notify both users that the message was deleted for everyone.
+      if (updatedMessage) {
+        const senderId = String(updatedMessage.senderId);
+        const receiverId = String(updatedMessage.receiverId);
+
+        const chatId =
+          senderId < receiverId
+            ? `${senderId}-${receiverId}`
+            : `${receiverId}-${senderId}`;
+
+        await pusher.trigger(`chat-${chatId}`, "message-deleted", {
+          messageId: String(updatedMessage._id),
+          updatedMessage: updatedMessage.toObject(),
+        });
+      }
+
       return NextResponse.json({
         message: "Deleted for everyone",
         updatedMessage,
@@ -152,6 +174,3 @@ export async function DELETE(
     );
   }
 }
-
-
-

@@ -81,13 +81,29 @@ export async function DELETE(
     // PERMANENTLY DELETE MESSAGES THAT BOTH USERS DELETED
     // ==========================================================
 
-    for (const message of messagesToDeletePermanently) {
-      // Delete Cloudinary files
-      await deleteMessageFiles(message);
+    // for (const message of messagesToDeletePermanently) {
+    //   // Delete Cloudinary files
+    //   await deleteMessageFiles(message);
 
-      // Delete MongoDB message
+    //   // Delete MongoDB message
+    //   await Message.findByIdAndDelete(message._id);
+    // }
+
+
+    
+    // First remove all messages scheduled for permanent deletion.
+    // This prevents messages being deleted together from keeping
+    // each other's Cloudinary files alive.
+    for (const message of messagesToDeletePermanently) {
       await Message.findByIdAndDelete(message._id);
     }
+
+    // Now check remaining database messages before deleting files.
+    // Forwarded copies and other messages can still reference them.
+    for (const message of messagesToDeletePermanently) {
+      await deleteMessageFiles(message);
+    }
+
 
     return NextResponse.json({
       message: "Chat cleared for you",
